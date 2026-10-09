@@ -5,53 +5,69 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Reportes de Lectura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f5f7f6; --panel:#ffffff; --ink:#1d2b2a; --muted:#5d6e6c; --line:#d9e2e0;
-  --teal:#0f6e6e; --teal-2:#e3f1f0; --teal-ink:#ffffff;
-  --ok:#2e7d4f; --ok-bg:#e4f3ea; --late:#b26a00; --late-bg:#fdf0dc;
-  --out:#a8322d; --out-bg:#fbe5e3; --pend:#56636b; --pend-bg:#eceff1;
-  --just:#5b4b9a; --just-bg:#ece8f7; --warn-bg:#fff6d6; --warn-ink:#6b5200;
-  --radius:10px; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04);
+  --bg:#f6f3ee; --panel:#fffdf9; --ink:#1f2933; --muted:#6b645a; --line:#e7dfd2;
+  --brand:#1b5e66; --brand-2:#2c7a73; --brand-soft:#dcebe8; --brand-ink:#ffffff;
+  --accent:#c8553d; --accent-soft:#f7e3dd;
+  --ok:#2f7d4f; --ok-bg:#e2f1e7; --ok-fill:#3f9a64;
+  --late:#9a6212; --late-bg:#fbeed6; --late-fill:#e0a33a;
+  --out:#a8372f; --out-bg:#f8e0dc; --out-fill:#cf5a4b;
+  --just:#5f4796; --just-bg:#ebe5f6; --just-fill:#8a6fc4;
+  --pend:#51606d; --pend-bg:#e8ecf0; --pend-fill:#c3ccd5;
+  --none-fill:#eaa79c;
+  --warn-bg:#fdf3d7; --warn-ink:#6b4f00;
+  --radius:12px; --shadow:0 1px 2px rgba(60,40,20,.05),0 4px 14px rgba(60,40,20,.05);
+  --font:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#121918; --panel:#1b2423; --ink:#e4ecea; --muted:#9db0ad; --line:#2f3d3b;
-    --teal:#4fb3ae; --teal-2:#1f3534; --teal-ink:#0d1716;
-    --ok:#7fd3a0; --ok-bg:#1d3527; --late:#f0b45a; --late-bg:#3a2d16;
-    --out:#f08a83; --out-bg:#3d2120; --pend:#b6c2c8; --pend-bg:#2a3236;
-    --just:#b9a8f2; --just-bg:#2c2742; --warn-bg:#3a3214; --warn-ink:#f1d98a;
+    --bg:#141b1c; --panel:#1c2526; --ink:#e9eeec; --muted:#a5b2ae; --line:#2f3c3d;
+    --brand:#5fb7ad; --brand-2:#4aa197; --brand-soft:#1f3a39; --brand-ink:#0e1918;
+    --accent:#ec8a72; --accent-soft:#3d2620;
+    --ok:#8fd8aa; --ok-bg:#1d3527; --ok-fill:#4fae74;
+    --late:#f2c36f; --late-bg:#3b2e15; --late-fill:#d39a35;
+    --out:#f39b8f; --out-bg:#3e2220; --out-fill:#d9695a;
+    --just:#c3b3f3; --just-bg:#2d2744; --just-fill:#9580d1;
+    --pend:#bcc7cf; --pend-bg:#2a3338; --pend-fill:#55636c;
+    --none-fill:#a95d53;
+    --warn-bg:#3a3215; --warn-ink:#f2da8e;
   }
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-header{background:var(--teal);color:var(--teal-ink);padding:14px 16px}
-header h1{margin:0;font-size:1.15rem}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--font)}
+header{background:linear-gradient(120deg,var(--brand),var(--brand-2));color:var(--brand-ink);padding:16px 16px 14px;border-bottom:4px solid var(--accent)}
+header h1{margin:0;font-size:1.2rem;letter-spacing:.2px}
 header p{margin:2px 0 0;font-size:.85rem;opacity:.9}
 nav{display:flex;gap:4px;overflow-x:auto;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
 nav button{border:0;background:transparent;color:var(--muted);padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer;white-space:nowrap}
-nav button[aria-current="page"]{background:var(--teal-2);color:var(--ink);font-weight:600}
+nav button:hover{background:var(--brand-soft);color:var(--ink)}
+nav button[aria-current="page"]{background:var(--brand);color:var(--brand-ink);font-weight:700}
 main{max-width:1100px;margin:0 auto;padding:16px}
 section.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
-h2{font-size:1.05rem;margin:0 0 10px}
+h2{font-size:1.08rem;margin:0 0 10px;color:var(--brand)}
 h3{font-size:.95rem;margin:14px 0 6px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
 label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}
-input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0}
 textarea{width:100%;min-height:80px;resize:vertical}
-button.btn{font:inherit;border:1px solid var(--teal);background:var(--teal);color:var(--teal-ink);border-radius:8px;padding:7px 12px;cursor:pointer}
-button.btn.sec{background:transparent;color:var(--teal)}
+button.btn:hover{filter:brightness(1.08)}
+button.btn{font:inherit;border:1px solid var(--brand);background:var(--brand);color:var(--brand-ink);border-radius:8px;padding:7px 12px;cursor:pointer}
+button.btn.sec{background:transparent;color:var(--brand)}
 button.btn.small{padding:4px 8px;font-size:.82rem}
 button.btn.danger{border-color:var(--out);background:transparent;color:var(--out)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.kpi{border:1px solid var(--line);border-radius:var(--radius);padding:10px;background:var(--bg)}
-.kpi b{display:block;font-size:1.5rem}
+.kpi{border:1px solid var(--line);border-left:5px solid var(--k,var(--brand));border-radius:var(--radius);padding:10px 12px;background:var(--panel)}
+.kpi b{display:block;font-size:1.6rem;color:var(--k,var(--brand))}
 .kpi span{font-size:.8rem;color:var(--muted)}
 .chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:600;white-space:nowrap}
 .e-a_tiempo{background:var(--ok-bg);color:var(--ok)}
 .e-extemporaneo{background:var(--late-bg);color:var(--late)}
 .e-fuera_plazo{background:var(--out-bg);color:var(--out)}
-.e-no_entregado{background:var(--out-bg);color:var(--out)}
+.e-no_entregado{background:var(--out-fill);color:#fff}
 .e-pendiente{background:var(--pend-bg);color:var(--pend)}
 .e-prorroga,.e-justificado{background:var(--just-bg);color:var(--just)}
 table{width:100%;border-collapse:collapse;font-size:.88rem}
@@ -59,27 +75,32 @@ th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertic
 th{color:var(--muted);font-weight:600;font-size:.8rem}
 .tablewrap{overflow-x:auto}
 .muted{color:var(--muted)}
-.note{background:var(--teal-2);border-radius:8px;padding:10px 12px;font-size:.87rem;margin:8px 0}
+.note{background:var(--brand-soft);border-radius:8px;padding:10px 12px;font-size:.87rem;margin:8px 0}
 .warn{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:10px 12px;font-size:.87rem;margin:8px 0}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .seg label{flex-direction:row;align-items:center;gap:0;margin:0}
 .seg input{position:absolute;opacity:0;pointer-events:none}
 .seg span{padding:5px 9px;font-size:.8rem;cursor:pointer;color:var(--muted);border-right:1px solid var(--line)}
 .seg label:last-child span{border-right:0}
-.seg input:checked+span{background:var(--teal);color:var(--teal-ink)}
-.seg input:focus-visible+span{outline:2px solid var(--teal);outline-offset:-2px}
+.seg input:checked+span{background:var(--brand);color:var(--brand-ink)}
+.seg input:focus-visible+span{outline:2px solid var(--brand);outline-offset:-2px}
 .secrow{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
 .dim{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0}
 .dim details{margin-top:6px;font-size:.84rem}
 .dim ol{margin:4px 0;padding-left:20px}
 .checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:4px 14px}
 .checks label{flex-direction:row;align-items:flex-start;gap:6px;color:var(--ink);font-size:.86rem}
-.bar{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--pend-bg)}
+.bar{display:flex;height:24px;border-radius:7px;overflow:hidden;background:var(--pend-bg);gap:2px}
 .bar div{height:100%}
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.8rem;margin:6px 0 10px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
 .hidden{display:none!important}
+.unica{display:flex;gap:12px;align-items:flex-start;background:var(--accent-soft);border:1px solid var(--accent);border-left:6px solid var(--accent);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px}
+.unica b{color:var(--accent)}
+.unica .ico{font-size:1.4rem;line-height:1}
+.lock{max-width:440px;margin:24px auto}
+.lock input{width:100%}
 #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:.87rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
 #toast.show{opacity:1}
 @media (max-width:600px){main{padding:12px}section.card{padding:12px}}
@@ -166,21 +187,46 @@ const ESTADOS = {
   a_tiempo:"A tiempo", extemporaneo:"Extemporáneo", fuera_plazo:"Fuera de plazo",
   prorroga:"Prórroga acordada", justificado:"Justificado", pendiente:"Pendiente", no_entregado:"No entregado"
 };
-const COLORES_ESTADO = {a_tiempo:"var(--ok)",extemporaneo:"var(--late)",fuera_plazo:"var(--out)",prorroga:"var(--just)",justificado:"var(--just)",pendiente:"var(--pend-bg)",no_entregado:"var(--out-bg)"};
+const COLORES_ESTADO = {a_tiempo:"var(--ok-fill)",extemporaneo:"var(--late-fill)",fuera_plazo:"var(--out-fill)",prorroga:"var(--just-fill)",justificado:"var(--just-fill)",pendiente:"var(--pend-fill)",no_entregado:"var(--none-fill)"};
 /* Expresiones que suelen describir rasgos fijos en lugar de situaciones */
 const DISPOSICIONAL = /\b(es|son|está|anda)\s+(muy\s+)?(flojo|floja|lento|lenta|distraíd[oa]|distraid[oa]|tímid[oa]|timid[oa]|desordenad[oa]|perezos[oa]|inquiet[oa]|agresiv[oa]|irresponsable|desinteresad[oa]|apátic[oa]|apatic[oa]|burr[oa]|malcriad[oa]|problemátic[oa]|conflictiv[oa])\b|\bno le (interesa|gusta) (leer|nada)\b|\bno quiere (hacer|trabajar|leer)\b|\bno sabe (leer|escribir|nada)\b|\bsiempre (olvida|llega tarde|se distrae)\b/i;
+
+/* ============================================================
+   LISTAS PRECARGADAS
+   Las listas de los seis grupos (Listas actuales.xlsx, 100 alumnos) vienen dentro
+   de esta página, cifradas con AES-GCM. En GitHub solo se ve texto ilegible; la
+   contraseña las abre una vez por navegador y quedan guardadas en ese equipo.
+   ============================================================ */
+const ROSTER_CIFRADO = {v:1, iter:600000, salt:"XpltLktmZHMSAJAGVWQFdA==", iv:"/QZcni2ONd33XSeX", ct:"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"};
+const b64 = t => Uint8Array.from(atob(t), c=>c.charCodeAt(0));
+async function desbloquear(ev){
+  ev.preventDefault();
+  const pw = $("#pw").value; const msg = $("#pwmsg");
+  if(!crypto?.subtle){ msg.textContent = "Este navegador no permite abrir listas cifradas. Use Chrome, Edge o Firefox actualizados."; return; }
+  msg.textContent = "Abriendo listas…";
+  try{
+    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+    const key = await crypto.subtle.deriveKey({name:"PBKDF2", salt:b64(ROSTER_CIFRADO.salt), iterations:ROSTER_CIFRADO.iter, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+    const plano = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64(ROSTER_CIFRADO.iv)}, key, b64(ROSTER_CIFRADO.ct));
+    aplicarRoster(JSON.parse(new TextDecoder().decode(plano)));
+    ir("grupos");
+  }catch(e){ msg.textContent = "Contraseña incorrecta. Revise mayúsculas y puntos."; }
+}
 
 /* ============================================================
    ALMACENAMIENTO (solo en este navegador)
    ============================================================ */
 const KEY = "reportes_lectura_molino_v1";
-const RONDAS_INICIALES = [{id:"R1",nombre:"Ronda 1",inicio:"2026-09-28",limite:"2026-10-09",extemporaneo:"2026-10-12"}];
+/* Ronda 1: la entrega extemporánea del lunes 12/10/2026 se acepta POR ÚNICA OCASIÓN.
+   Las rondas nuevas se crean sin día de extemporáneo (extemporaneo = limite). */
+const RONDAS_INICIALES = [{id:"R1",nombre:"Ronda 1",inicio:"2026-09-28",limite:"2026-10-09",extemporaneo:"2026-10-12",extemporaneoUnico:true}];
 function estadoVacio(){ return {version:1, roster:[], rondas:structuredClone(RONDAS_INICIALES), registros:[], ultimoRespaldo:null}; }
 let S;
 function cargar(){
   try{ const raw = localStorage.getItem(KEY); S = raw ? JSON.parse(raw) : estadoVacio(); }
   catch(e){ S = estadoVacio(); aviso("No se pudo leer el almacenamiento del navegador; se inicia vacío."); }
   if(!S.rondas || !S.rondas.length) S.rondas = structuredClone(RONDAS_INICIALES);
+  const r1 = S.rondas.find(r=>r.id==="R1"); if(r1 && r1.extemporaneoUnico===undefined) r1.extemporaneoUnico = true;
 }
 function guardar(){
   try{ localStorage.setItem(KEY, JSON.stringify(S)); }
@@ -240,10 +286,12 @@ let filtroGrupo = "1°A";
 let edicion = null; // {alumnoId}
 
 function sinLista(){
-  return `<section class="card"><h2>Primero cargue la lista de alumnos</h2>
-  <p>La aplicación no trae nombres guardados: así puede publicarse en GitHub sin exponer a nadie. La lista vive solo en este navegador.</p>
-  <p>Vaya a <b>Rondas y lista</b> y use <b>Cargar lista</b> con el archivo <code>roster_privado.json</code> (o un CSV con columnas <code>Alumno,Grupo</code>).</p>
-  <button class="btn" onclick="ir('config')">Ir a Rondas y lista</button></section>`;
+  return `<section class="card lock"><h2>Abrir las listas de los grupos</h2>
+  <p>Las listas de 1.°A a 6.°A ya vienen en la aplicación, protegidas con contraseña para que nadie pueda leer los nombres en GitHub.</p>
+  <p class="muted" style="font-size:.86rem">Se escribe una sola vez en cada computadora o celular; después quedan guardadas en ese navegador.</p>
+  <form onsubmit="desbloquear(event)"><label>Contraseña<input id="pw" type="password" autocomplete="current-password" required autofocus></label>
+  <div class="row" style="margin-top:10px"><button class="btn" type="submit">Abrir listas</button></div>
+  <p id="pwmsg" class="muted" role="status" style="min-height:1.3em"></p></form></section>`;
 }
 function selectorRonda(){
   return `<label>Ronda<select onchange="rondaActiva=this.value;render()">${S.rondas.map(r=>`<option value="${esc(r.id)}" ${r.id===rondaSel().id?"selected":""}>${esc(r.nombre)} · límite ${fmtFecha(r.limite)}</option>`).join("")}</select></label>`;
@@ -265,15 +313,16 @@ function vistaPanel(){
   const entregados = c.a_tiempo + c.extemporaneo + c.fuera_plazo;
   const faltan = c.pendiente + c.no_entregado;
   const dias = Math.round((new Date(ronda.extemporaneo) - new Date(hoy()))/864e5);
-  let html = `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Panel de la ronda</h2>${selectorRonda()}</div>
-  <p class="muted">Fecha límite: <b>${fmtFecha(ronda.limite)}</b> · Extemporáneo hasta: <b>${fmtFecha(ronda.extemporaneo)}</b> · Hoy: ${fmtFecha(hoy())}${dias>=0?` · faltan ${dias} día(s) para cerrar extemporáneos`:" · ronda cerrada"}</p>
+  const cierre = tieneExtemporaneo(ronda) ? "para cerrar extemporáneos" : "para la fecha límite";
+  let html = avisoUnico(ronda) + `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Panel de la ronda</h2>${selectorRonda()}</div>
+  <p class="muted">Fecha límite: <b>${fmtFecha(ronda.limite)}</b>${tieneExtemporaneo(ronda)?` · Extemporáneo (única ocasión) hasta: <b>${fmtFecha(ronda.extemporaneo)}</b>`:" · Sin extemporáneo"} · Hoy: ${fmtFecha(hoy())}${dias>=0?` · faltan ${dias} día(s) ${cierre}`:" · ronda cerrada"}</p>
   <div class="kpis">
-    <div class="kpi"><b>${total}</b><span>Alumnos en lista</span></div>
-    <div class="kpi"><b>${entregados}</b><span>Entregados (${total?Math.round(100*entregados/total):0}%)</span></div>
-    <div class="kpi"><b>${c.a_tiempo}</b><span>A tiempo</span></div>
-    <div class="kpi"><b>${c.extemporaneo}</b><span>Extemporáneos</span></div>
-    <div class="kpi"><b>${c.prorroga+c.justificado}</b><span>Prórroga o justificado</span></div>
-    <div class="kpi"><b>${faltan}</b><span>${dias>=0?"Pendientes":"No entregados"}</span></div>
+    <div class="kpi" style="--k:var(--brand)"><b>${total}</b><span>Alumnos en lista</span></div>
+    <div class="kpi" style="--k:var(--brand-2)"><b>${entregados}</b><span>Entregados (${total?Math.round(100*entregados/total):0}%)</span></div>
+    <div class="kpi" style="--k:var(--ok)"><b>${c.a_tiempo}</b><span>A tiempo</span></div>
+    <div class="kpi" style="--k:var(--late)"><b>${c.extemporaneo}</b><span>Extemporáneos</span></div>
+    <div class="kpi" style="--k:var(--just)"><b>${c.prorroga+c.justificado}</b><span>Prórroga o justificado</span></div>
+    <div class="kpi" style="--k:var(--out)"><b>${faltan}</b><span>${dias>=0?"Pendientes":"No entregados"}</span></div>
   </div></section>`;
   html += `<section class="card"><h2>Entregas por grupo</h2>${leyenda()}<table><thead><tr><th>Grupo</th><th style="width:55%">Estado</th><th>Entregados</th><th>Revisados</th></tr></thead><tbody>${
     GRUPOS.map(g=>{ const cg=conteo(ronda,g); const tg=S.roster.filter(a=>a.grupo===g).length; if(!tg) return "";
@@ -295,6 +344,15 @@ function vistaPanel(){
   html += recordatorioRespaldo();
   return html;
 }
+const tieneExtemporaneo = r => r.extemporaneo > r.limite;
+function avisoUnico(ronda){
+  if(tieneExtemporaneo(ronda) && ronda.extemporaneoUnico){
+    const abierta = hoy() <= ronda.extemporaneo;
+    return `<div class="unica" role="note"><span class="ico" aria-hidden="true">⚠️</span><div><b>Solo por esta ocasión.</b> En la ${esc(ronda.nombre)} se recibe entrega extemporánea hasta el <b>lunes ${fmtFecha(ronda.extemporaneo)}</b>. Es una excepción única: a partir de la siguiente ronda no habrá fecha de extemporáneo y lo recibido después de la fecha límite quedará como «Fuera de plazo».${abierta?" Conviene recordarlo a los grupos al recibir los cuadernos.":""}</div></div>`;
+  }
+  if(!tieneExtemporaneo(ronda)) return `<div class="note">En la ${esc(ronda.nombre)} no hay fecha de extemporáneo: la entrega extemporánea se aceptó por única ocasión en la Ronda 1.</div>`;
+  return "";
+}
 function recordatorioRespaldo(){
   if(!S.registros.length) return "";
   const ult = S.ultimoRespaldo ? new Date(S.ultimoRespaldo) : null;
@@ -312,13 +370,13 @@ function vistaGrupos(){
   if(!S.roster.length) return sinLista();
   const ronda = rondaSel();
   const lista = S.roster.filter(a=>a.grupo===filtroGrupo).sort((a,b)=>a.nl-b.nl);
-  return `<section class="card"><div class="row" style="justify-content:space-between">
+  return avisoUnico(ronda) + `<section class="card"><div class="row" style="justify-content:space-between">
     <h2 style="margin:0">Entregas por grupo</h2>
     <div class="row"><label>Grupo<select onchange="filtroGrupo=this.value;render()">${GRUPOS.map(g=>`<option ${g===filtroGrupo?"selected":""}>${g}</option>`).join("")}</select></label>${selectorRonda()}</div></div>
   <p class="muted">«Recibido hoy» registra la entrega con la fecha de hoy (${fmtFecha(hoy())}). Si lo recibió otro día, escriba la fecha. La revisión del contenido se hace después, en «Revisar».</p>
   <div class="tablewrap"><table><thead><tr><th>N.L.</th><th>Alumno</th><th>Estado</th><th>Recibido</th><th class="noprint">Acciones</th></tr></thead><tbody>${
     lista.map(a=>{ const r=registroDe(a.id,ronda.id); const e=estadoEntrega(a.id,ronda);
-      return `<tr><td>${a.nl}</td><td>${esc(a.nombre)}${a.nota?` <span class="muted" title="${esc(a.nota)}">(*)</span>`:""}${revisado(r)?` <span class="chip" style="background:var(--teal-2)">revisado</span>`:""}</td>
+      return `<tr><td>${a.nl}</td><td>${esc(a.nombre)}${a.nota?` <span class="muted" title="${esc(a.nota)}">(*)</span>`:""}${revisado(r)?` <span class="chip" style="background:var(--brand-soft)">revisado</span>`:""}</td>
       <td><span class="chip e-${e}" id="chip-${a.id}">${ESTADOS[e]}</span></td>
       <td><input type="date" value="${r?.fechaRecepcion||""}" aria-label="Fecha de recepción de ${esc(a.nombre)}" onchange="fijarFecha('${a.id}',this.value)"></td>
       <td class="noprint"><div class="row" style="gap:4px">
@@ -354,7 +412,8 @@ function refrescarFila(alumnoId){
 function fijarFecha(alumnoId, fecha){
   const r = obtenerRegistro(alumnoId, rondaSel().id); r.fechaRecepcion = fecha; tocar(r); refrescarFila(alumnoId);
   const a = alumnoPorId(alumnoId);
-  if(fecha) aviso(`${a.grupo} n.º ${a.nl}: ${ESTADOS[estadoEntrega(alumnoId,rondaSel())]}`);
+  const e = estadoEntrega(alumnoId,rondaSel());
+  if(fecha) aviso(`${a.grupo} n.º ${a.nl}: ${ESTADOS[e]}${e==="extemporaneo"?" · se acepta solo por esta ocasión":""}`);
 }
 function fijarManual(alumnoId, v){
   if(!v) return; const r = obtenerRegistro(alumnoId, rondaSel().id);
@@ -446,7 +505,7 @@ function vistaCriterios(){
   </section>
   <section class="card"><h2>Estados de entrega</h2><table><tbody>
    <tr><td><span class="chip e-a_tiempo">A tiempo</span></td><td>Recibido hasta la fecha límite de la ronda.</td></tr>
-   <tr><td><span class="chip e-extemporaneo">Extemporáneo</span></td><td>Recibido después de la fecha límite y hasta el día de extemporáneos.</td></tr>
+   <tr><td><span class="chip e-extemporaneo">Extemporáneo</span></td><td>Recibido después de la fecha límite y hasta el día de extemporáneos. Solo existe en la Ronda 1, por única ocasión (lunes 12/10/2026).</td></tr>
    <tr><td><span class="chip e-fuera_plazo">Fuera de plazo</span></td><td>Recibido después del día de extemporáneos. Se registra igual: el reporte cuenta para la lectura aunque no para el plazo.</td></tr>
    <tr><td><span class="chip e-prorroga">Prórroga acordada</span></td><td>Hubo un acuerdo previo con la familia o con el equipo especialista.</td></tr>
    <tr><td><span class="chip e-justificado">Justificado</span></td><td>Ausencia o situación justificada.</td></tr>
@@ -475,7 +534,7 @@ function vistaDatos(){
   <div class="row">
     <button class="btn" onclick="respaldo()">Descargar respaldo completo (.json)</button>
     <button class="btn sec" onclick="exportarInterno()">Registro completo para Excel (.csv)</button>
-    <label class="btn sec" style="flex-direction:row;cursor:pointer;color:var(--teal)">Restaurar o combinar respaldo<input type="file" accept=".json" class="hidden" onchange="importarJSON(this.files[0]);this.value=''"></label>
+    <label class="btn sec" style="flex-direction:row;cursor:pointer;color:var(--brand)">Restaurar o combinar respaldo<input type="file" accept=".json" class="hidden" onchange="importarJSON(this.files[0]);this.value=''"></label>
   </div>
   <p class="muted" style="font-size:.84rem">Restaurar acepta el respaldo completo y también los archivos <code>registros_*.json</code> que Claude le prepare a partir de las fotografías: se combinan con lo que ya hay, alumno por alumno y ronda por ronda.</p>
   ${S.ultimoRespaldo?`<p class="muted">Último respaldo: ${new Date(S.ultimoRespaldo).toLocaleString("es-MX")}</p>`:""}</section>`;
@@ -555,7 +614,7 @@ function obtenerRegistroVacio(alumnoId,ronda){ return {alumnoId, ronda, numRepor
 
 function vistaConfig(){
   return `<section class="card"><h2>Rondas de entrega</h2>
-  <p class="muted">El estado de cada entrega se calcula con estas fechas. Puede corregirlas sin perder registros.</p>
+  <p class="muted">El estado de cada entrega se calcula con estas fechas. Puede corregirlas sin perder registros. Si «Extemporáneo hasta» es igual a la fecha límite, la ronda no tiene extemporáneo. La Ronda 1 es la única con extemporáneo, por acuerdo de única ocasión.</p>
   <div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Inicio</th><th>Fecha límite</th><th>Extemporáneo hasta</th><th></th></tr></thead><tbody>${
     S.rondas.map((r,i)=>`<tr><td><input type="text" value="${esc(r.nombre)}" onchange="editarRonda(${i},'nombre',this.value)"></td>
     <td><input type="date" value="${r.inicio||""}" onchange="editarRonda(${i},'inicio',this.value)"></td>
@@ -565,8 +624,9 @@ function vistaConfig(){
   }</tbody></table></div>
   <button class="btn sec" style="margin-top:8px" onclick="agregarRonda()">Agregar ronda</button></section>
   <section class="card"><h2>Lista de alumnos</h2>
-  <p>${S.roster.length?`Lista cargada: <b>${S.roster.length}</b> alumnos (${GRUPOS.map(g=>`${g}: ${S.roster.filter(a=>a.grupo===g).length}`).join(" · ")}).`:"No hay lista cargada."}</p>
-  <div class="row"><label class="btn" style="flex-direction:row;cursor:pointer;color:var(--teal-ink)">Cargar lista (.json o .csv)<input type="file" accept=".json,.csv" class="hidden" onchange="cargarLista(this.files[0]);this.value=''"></label></div>
+  <p>${S.roster.length?`Lista cargada: <b>${S.roster.length}</b> alumnos (${GRUPOS.map(g=>`${g}: ${S.roster.filter(a=>a.grupo===g).length}`).join(" · ")}).`:"Las listas precargadas todavía no se abren en este navegador: vaya a Panel y escriba la contraseña."}</p>
+  <p class="muted" style="font-size:.84rem">Las listas de los seis grupos vienen precargadas. Use este botón solo si hay altas o bajas.</p>
+  <div class="row"><label class="btn" style="flex-direction:row;cursor:pointer;color:var(--brand-ink)">Actualizar lista (.json o .csv)<input type="file" accept=".json,.csv" class="hidden" onchange="cargarLista(this.files[0]);this.value=''"></label></div>
   <p class="muted" style="font-size:.84rem">CSV aceptado: columnas <code>Alumno,Grupo</code> (como en «Listas actuales.xlsx», guardado como CSV UTF-8). El número de lista se asigna en el orden del archivo dentro de cada grupo. Al recargar, los alumnos que ya existen conservan sus registros.</p>
   <div class="note">La lista y los registros se guardan solo en este navegador (almacenamiento local). Nada se envía a GitHub ni a internet.</div></section>
   <section class="card"><h2>Borrar todo de este navegador</h2><p class="muted">Útil si usó una computadora compartida. Descargue antes un respaldo.</p><button class="btn danger" onclick="borrarTodo()">Borrar lista y registros</button></section>`;
@@ -579,8 +639,9 @@ function editarRonda(i,k,v){
 function agregarRonda(){
   const ult=S.rondas[S.rondas.length-1]; const n=S.rondas.length+1;
   const mas = (iso,d)=>{ const t=new Date(iso+"T12:00:00"); t.setDate(t.getDate()+d); return t.toISOString().slice(0,10); };
-  S.rondas.push({id:"R"+n+"-"+uid().slice(0,4), nombre:"Ronda "+n, inicio:mas(ult.extemporaneo,1), limite:mas(ult.limite,14), extemporaneo:mas(ult.extemporaneo,14)});
-  guardar(); render(); aviso("Ronda agregada; revise las fechas");
+  const limite = mas(ult.limite,14);
+  S.rondas.push({id:"R"+n+"-"+uid().slice(0,4), nombre:"Ronda "+n, inicio:mas(ult.limite,1), limite, extemporaneo:limite, extemporaneoUnico:false});
+  guardar(); render(); aviso("Ronda agregada sin extemporáneo; revise la fecha límite");
 }
 function quitarRonda(i){ S.rondas.splice(i,1); guardar(); render(); }
 function borrarTodo(){ if(confirm("¿Borrar TODA la lista y TODOS los registros de este navegador?") && confirm("Confirme de nuevo: esta acción no se puede deshacer.")){ localStorage.removeItem(KEY); cargar(); render(); aviso("Datos borrados"); } }

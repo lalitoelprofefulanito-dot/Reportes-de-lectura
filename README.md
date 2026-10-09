@@ -2,13 +2,15 @@
 
 Aplicación de una sola página para llevar el control de entregas y la revisión de los reportes de lectura de 1.° a 6.° de primaria. Funciona en el navegador, sin servidor y sin base de datos externa.
 
-## Lo más importante: aquí no hay nombres
+## Lo más importante: los nombres van cifrados
 
-Este repositorio **no contiene datos de alumnos**. La lista de alumnos y los registros se cargan en el navegador del docente y se guardan solo ahí (almacenamiento local). Por eso la página puede publicarse en GitHub Pages sin exponer a nadie.
+Las listas de los seis grupos (100 alumnos) vienen **dentro de `index.html`, cifradas** (AES-GCM de 256 bits con clave derivada de una contraseña, PBKDF2 de 600,000 vueltas). En GitHub solo se ve una cadena ilegible. La contraseña se escribe una vez por navegador; después la lista y los registros se guardan solo en ese equipo (almacenamiento local).
+
+La contraseña no está en el repositorio. Compártala solo con quien deba capturar.
 
 Nunca suba al repositorio:
 
-- `roster_privado.json` (la lista con nombres)
+- `roster_privado.json` (la lista sin cifrar)
 - los respaldos `INTERNO_*.json` o `INTERNO_*.csv`
 - fotografías de cuadernos
 
@@ -30,8 +32,8 @@ El archivo `.gitignore` ya bloquea esos nombres, pero conviene revisar antes de 
 ## Primer uso
 
 1. Abra la dirección de su página.
-2. Vaya a **Rondas y lista** → **Cargar lista** y elija `roster_privado.json` desde su computadora.
-3. Revise que la **Ronda 1** tenga: límite 09/10/2026 y extemporáneo hasta 12/10/2026.
+2. Escriba la contraseña de las listas y pulse **Abrir listas**. Se abre directamente **Entregas por grupo**.
+3. La **Ronda 1** ya trae: límite 09/10/2026 y extemporáneo hasta el lunes 12/10/2026, **por única ocasión**. La app lo recuerda con un aviso en el Panel y en Entregas por grupo, y las rondas nuevas se crean sin extemporáneo.
 4. En **Entregas por grupo**, marque cada cuaderno con **Recibido hoy** o escriba la fecha en que lo recibió.
 5. Cuando tenga tiempo, entre a **Revisar** para valorar el contenido.
 6. Al terminar cada jornada: **Exportar y respaldos → Descargar respaldo completo**.

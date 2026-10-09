@@ -29,7 +29,7 @@ Tres cuidados:
 | Justificado | Ausencia o situación justificada |
 | Pendiente / No entregado | Sin recibir, con la ronda abierta / ya cerrada |
 
-Ronda 1: límite **09/10/2026**, extemporáneo hasta **12/10/2026**.
+Ronda 1: límite **09/10/2026**, extemporáneo hasta **12/10/2026**, **por única ocasión**. Las rondas siguientes no tienen día de extemporáneo: lo recibido después de la fecha límite queda como «Fuera de plazo» y se registra igual.
 
 ## Apartados por grado
 
