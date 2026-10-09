@@ -1,0 +1,83 @@
+# Control de Reportes de Lectura · Biblioteca Viva
+
+Aplicación de una sola página para llevar el control de entregas y la revisión de los reportes de lectura de 1.° a 6.° de primaria. Funciona en el navegador, sin servidor y sin base de datos externa.
+
+## Lo más importante: aquí no hay nombres
+
+Este repositorio **no contiene datos de alumnos**. La lista de alumnos y los registros se cargan en el navegador del docente y se guardan solo ahí (almacenamiento local). Por eso la página puede publicarse en GitHub Pages sin exponer a nadie.
+
+Nunca suba al repositorio:
+
+- `roster_privado.json` (la lista con nombres)
+- los respaldos `INTERNO_*.json` o `INTERNO_*.csv`
+- fotografías de cuadernos
+
+El archivo `.gitignore` ya bloquea esos nombres, pero conviene revisar antes de cada subida.
+
+## Publicarlo en GitHub Pages, paso a paso
+
+1. Entre a <https://github.com> con su cuenta.
+2. Arriba a la derecha, pulse el botón **+** y elija **New repository**.
+3. En **Repository name** escriba, por ejemplo, `reportes-lectura`. Deje marcada la opción **Public** (GitHub Pages gratuito la necesita; recuerde que el código no lleva nombres). Pulse **Create repository**.
+4. En la página del repositorio nuevo, busque el enlace **uploading an existing file** (o el botón **Add file → Upload files**).
+5. Arrastre a esa ventana los archivos `index.html`, `README.md`, `CRITERIOS.md` y `.gitignore`. Si su computadora oculta `.gitignore`, puede omitirlo.
+6. Abajo, en **Commit changes**, pulse el botón verde **Commit changes**.
+7. Vaya a la pestaña **Settings** del repositorio (arriba, con ícono de engrane).
+8. En el menú de la izquierda, pulse **Pages**.
+9. En **Build and deployment → Source** elija **Deploy from a branch**. En **Branch** elija `main` y la carpeta `/ (root)`. Pulse **Save**.
+10. Espere uno o dos minutos y recargue la página de **Pages**: aparecerá la dirección, parecida a `https://SU-USUARIO.github.io/reportes-lectura/`.
+
+## Primer uso
+
+1. Abra la dirección de su página.
+2. Vaya a **Rondas y lista** → **Cargar lista** y elija `roster_privado.json` desde su computadora.
+3. Revise que la **Ronda 1** tenga: límite 09/10/2026 y extemporáneo hasta 12/10/2026.
+4. En **Entregas por grupo**, marque cada cuaderno con **Recibido hoy** o escriba la fecha en que lo recibió.
+5. Cuando tenga tiempo, entre a **Revisar** para valorar el contenido.
+6. Al terminar cada jornada: **Exportar y respaldos → Descargar respaldo completo**.
+
+Los datos viven en el navegador y la computadora donde los capturó. Si cambia de equipo, descargue el respaldo en uno y use **Restaurar o combinar respaldo** en el otro.
+
+## Cómo entran los datos de las fotografías
+
+Cuando comparta fotografías de los reportes con Claude, recibirá un archivo `registros_*.json`. En **Exportar y respaldos → Restaurar o combinar respaldo** se combina con lo que ya tiene. Si un registro ya existe, se conserva el más reciente.
+
+Formato del archivo de registros:
+
+```json
+{
+  "tipo": "registros_reporte_lectura",
+  "registros": [
+    {
+      "alumnoId": "6A-01",
+      "ronda": "R1",
+      "numReporte": "1",
+      "fechaRecepcion": "2026-10-09",
+      "libro": {"titulo": "", "autor": "", "folio": "", "deRuta": ""},
+      "produccion": "autonomo",
+      "secciones": {"0": 2, "1": 2, "2": 1},
+      "dimensiones": {"D1": 3, "D2": 2},
+      "personalizacion": [0, 2],
+      "siguiente": [0],
+      "observacion": "",
+      "fotos": "20261009_101500.jpg",
+      "actualizado": "2026-10-09T18:00:00.000Z"
+    }
+  ]
+}
+```
+
+`alumnoId` es grupo + número de lista (`6A-01`). Los nombres solo están en la lista privada.
+
+## Exportar para trabajar con 5.° y 6.°
+
+En **Exportar y respaldos** hay dos descargas sin nombres:
+
+- **Tabla resumida por grado** (recomendada): conteos por estado, niveles por dimensión, decisiones propias y forma de producción.
+- **Una fila por reporte**: sin nombres, número de lista, fechas ni observaciones; filas revueltas y códigos al azar en cada descarga. Avisa cuando un grado tiene menos de 5 reportes, porque con tan pocas filas se puede adivinar de quién es cada una.
+
+Ambas se abren en Excel o en Hojas de cálculo de Google para graficar.
+
+## Para otros docentes
+
+Para usarla con otra escuela basta con cambiar, dentro de `index.html`, la constante `SECCIONES` (apartados del formato de cada grado) y cargar su propia lista. Los criterios y su razón están en `CRITERIOS.md` y dentro de la pestaña **Criterios**.

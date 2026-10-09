@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Reportes de Lectura</title>
+<style>
+:root{
+  --bg:#f5f7f6; --panel:#ffffff; --ink:#1d2b2a; --muted:#5d6e6c; --line:#d9e2e0;
+  --teal:#0f6e6e; --teal-2:#e3f1f0; --teal-ink:#ffffff;
+  --ok:#2e7d4f; --ok-bg:#e4f3ea; --late:#b26a00; --late-bg:#fdf0dc;
+  --out:#a8322d; --out-bg:#fbe5e3; --pend:#56636b; --pend-bg:#eceff1;
+  --just:#5b4b9a; --just-bg:#ece8f7; --warn-bg:#fff6d6; --warn-ink:#6b5200;
+  --radius:10px; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121918; --panel:#1b2423; --ink:#e4ecea; --muted:#9db0ad; --line:#2f3d3b;
+    --teal:#4fb3ae; --teal-2:#1f3534; --teal-ink:#0d1716;
+    --ok:#7fd3a0; --ok-bg:#1d3527; --late:#f0b45a; --late-bg:#3a2d16;
+    --out:#f08a83; --out-bg:#3d2120; --pend:#b6c2c8; --pend-bg:#2a3236;
+    --just:#b9a8f2; --just-bg:#2c2742; --warn-bg:#3a3214; --warn-ink:#f1d98a;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--teal);color:var(--teal-ink);padding:14px 16px}
+header h1{margin:0;font-size:1.15rem}
+header p{margin:2px 0 0;font-size:.85rem;opacity:.9}
+nav{display:flex;gap:4px;overflow-x:auto;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+nav button{border:0;background:transparent;color:var(--muted);padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer;white-space:nowrap}
+nav button[aria-current="page"]{background:var(--teal-2);color:var(--ink);font-weight:600}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
+h2{font-size:1.05rem;margin:0 0 10px}
+h3{font-size:.95rem;margin:14px 0 6px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0}
+textarea{width:100%;min-height:80px;resize:vertical}
+button.btn{font:inherit;border:1px solid var(--teal);background:var(--teal);color:var(--teal-ink);border-radius:8px;padding:7px 12px;cursor:pointer}
+button.btn.sec{background:transparent;color:var(--teal)}
+button.btn.small{padding:4px 8px;font-size:.82rem}
+button.btn.danger{border-color:var(--out);background:transparent;color:var(--out)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:var(--radius);padding:10px;background:var(--bg)}
+.kpi b{display:block;font-size:1.5rem}
+.kpi span{font-size:.8rem;color:var(--muted)}
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:600;white-space:nowrap}
+.e-a_tiempo{background:var(--ok-bg);color:var(--ok)}
+.e-extemporaneo{background:var(--late-bg);color:var(--late)}
+.e-fuera_plazo{background:var(--out-bg);color:var(--out)}
+.e-no_entregado{background:var(--out-bg);color:var(--out)}
+.e-pendiente{background:var(--pend-bg);color:var(--pend)}
+.e-prorroga,.e-justificado{background:var(--just-bg);color:var(--just)}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:.8rem}
+.tablewrap{overflow-x:auto}
+.muted{color:var(--muted)}
+.note{background:var(--teal-2);border-radius:8px;padding:10px 12px;font-size:.87rem;margin:8px 0}
+.warn{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:10px 12px;font-size:.87rem;margin:8px 0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg label{flex-direction:row;align-items:center;gap:0;margin:0}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{padding:5px 9px;font-size:.8rem;cursor:pointer;color:var(--muted);border-right:1px solid var(--line)}
+.seg label:last-child span{border-right:0}
+.seg input:checked+span{background:var(--teal);color:var(--teal-ink)}
+.seg input:focus-visible+span{outline:2px solid var(--teal);outline-offset:-2px}
+.secrow{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
+.dim{border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0}
+.dim details{margin-top:6px;font-size:.84rem}
+.dim ol{margin:4px 0;padding-left:20px}
+.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:4px 14px}
+.checks label{flex-direction:row;align-items:flex-start;gap:6px;color:var(--ink);font-size:.86rem}
+.bar{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--pend-bg)}
+.bar div{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.8rem;margin:6px 0 10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.hidden{display:none!important}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:.87rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+#toast.show{opacity:1}
+@media (max-width:600px){main{padding:12px}section.card{padding:12px}}
+@media print{nav,header,.noprint{display:none}body{background:#fff}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Control de Reportes de Lectura</h1>
+  <p>Biblioteca Viva · Ciclo 2026-2027 · Uso interno del docente</p>
+</header>
+<nav id="nav" aria-label="Secciones">
+  <button data-view="panel" aria-current="page">Panel</button>
+  <button data-view="grupos">Entregas por grupo</button>
+  <button data-view="registrar">Revisar reporte</button>
+  <button data-view="criterios">Criterios</button>
+  <button data-view="datos">Exportar y respaldos</button>
+  <button data-view="config">Rondas y lista</button>
+</nav>
+<main id="app"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   CONFIGURACIÓN PEDAGÓGICA
+   Apartados por grado: tomados de «Formatos_Reporte_de_Lectura_Cuaderno_1-6»
+   (Biblioteca Viva 2026-2027). El apartado 0 es el encabezado que todos copian.
+   ============================================================ */
+const GRUPOS = ["1°A","2°A","3°A","4°A","5°A","6°A"];
+const SECCIONES = {
+  1:["Encabezado (n.º y fecha)","Título del cuento","Mi dibujo","¿Qué pasó?","¿Me gustó? (carita)"],
+  2:["Encabezado (n.º y fecha)","Título y autor","Personajes","Al principio…","Al final…","Mi dibujo","¿Me gustó? ¿Por qué?"],
+  3:["Encabezado (n.º y fecha)","Título y autor","Personajes principales","¿Dónde y cuándo pasa?","¿Qué pasó?","Una pista y lo que descubrí","Una palabra nueva","Mi opinión"],
+  4:["Encabezado (n.º y fecha)","Título y autor","Personajes principales","¿Dónde y cuándo pasa?","Resumen","¿Por qué el personaje actuó así?","Una palabra nueva","Mi opinión"],
+  5:["Encabezado (n.º y fecha)","Ficha del libro","Resumen en mis propias palabras","¿Qué mueve a los personajes?","¿Qué mensaje quiso dejar el autor?","Mi opinión con una razón","Lo conecto con mi vida o con el mundo"],
+  6:["Encabezado (n.º y fecha)","Ficha del libro","Resumen en mis propias palabras","Análisis de un personaje","Lo que el texto no dice pero yo deduzco","Mi postura, con argumentos","¿Se parece a otro libro que he leído?","¿A quién se lo recomendaría y por qué?"]
+};
+const banda = g => g<=2 ? "A" : g<=4 ? "B" : "C";
+const NIVELES = ["Inicio","En camino","Logrado","Va más allá"];
+const DIMENSIONES = [
+  {id:"D1", nombre:"Recupera lo que dice el libro", pregunta:"¿El reporte muestra datos que sí están en el libro?",
+   d:{A:["Escribe o dicta el título con ayuda; lo que menciona no se relaciona con claridad con el cuento.","Título correcto y uno o dos elementos del cuento (un personaje, un objeto).","Título (y autor en 2.°) correctos; personajes o hechos que sí están en el cuento.","Agrega detalles precisos (nombres, lugares, objetos) que muestran que volvió al libro."],
+      B:["Datos de portada incompletos; personajes o lugar que no corresponden al libro.","Título y autor correctos; nombra personajes sin decir quiénes son.","Personajes con una frase de quién es cada uno, y lugar y tiempo (o «el libro no lo dice»).","Además distingue personajes principales de secundarios o precisa detalles de lugar y tiempo."],
+      C:["Ficha incompleta: falta título o autor.","Título y autor; faltan editorial o género (en 6.°, también páginas).","Ficha completa según lo que pide su grado.","Ficha completa y explica por qué el libro pertenece a ese género."]}},
+  {id:"D2", nombre:"Lo cuenta con sus palabras", pregunta:"¿Reconstruye la historia en orden y sin copiar?",
+   d:{A:["Un dibujo o una frase suelta, sin relación con la secuencia.","Una idea de lo que pasó.","En 1.°: lo que pasó, en orden (puede ser dictado). En 2.°: una oración de inicio y una de final.","Une las partes con «después», «entonces» o nombra el problema del cuento."],
+      B:["Copia frases del libro o lista hechos sueltos.","Inicio y final; falta lo que pasó en medio.","Inicio, desarrollo y final con sus palabras.","Además identifica el problema central y cómo se resuelve."],
+      C:["Texto copiado del libro o de otra fuente.","Resumen parcial o centrado en detalles secundarios.","Historia completa con sus palabras y con las ideas principales.","Síntesis que elige lo esencial y lo dice en pocas líneas."]}},
+  {id:"D3", nombre:"Lee entre líneas y muestra la pista", pregunta:"¿Deduce algo que el libro no dice y señala la página que lo sostiene?",
+   d:{A:null,
+      B:["Repite algo que el libro dice tal cual; todavía no aparece una deducción.","Hace una deducción, pero sin pista o sin página.","Deducción con la pista y la página que la sostienen.","Usa más de una pista o explica cómo las unió."],
+      C:["Confunde la deducción con el resumen.","Deducción posible, sin evidencia del texto.","Deducción con pista y página.","Relaciona motivos, cambios del personaje o mensaje del autor con varias pistas."]}},
+  {id:"D4", nombre:"Opina y da razones", pregunta:"¿Toma una postura y la sostiene?",
+   d:{A:["No marca opinión.","Marca una carita o dice sí o no.","En 1.°: carita y dibujo de lo que más le gustó. En 2.°: «Me gustó porque…» con una razón.","La razón se liga a una parte concreta del cuento."],
+      B:["Opinión sin razón.","Razón general («porque está bonito»).","Razón ligada a algo que pasa en el libro.","Dos razones, o compara con otro libro o con algo que vivió."],
+      C:["Postura sin argumento.","Un argumento general.","Postura con argumentos ligados a la historia (en 6.°, al menos dos).","Considera otra postura posible o recomienda el libro a un lector concreto, con razones."]}},
+  {id:"D5", nombre:"Lo hace suyo", pregunta:"¿Qué decisiones propias tomó para comunicar lo que entendió?",
+   d:{A:null,B:null,C:null},
+   comun:["Sigue el formato sin marcas propias.","Toma alguna decisión propia (dibujo, color, orden).","Sus decisiones ayudan a entender: dibujo que explica, esquema, conexión con su vida o sus intereses.","Propuesta original (cómic, carta al personaje, mapa) que conserva lo que pide cada apartado."]}
+];
+const PERSONALIZACION = [
+  "Dibujo o ilustración propia que explica algo del libro",
+  "Esquema, mapa u organizador gráfico",
+  "Conexión con un interés propio (juego, serie, deporte, música)",
+  "Conexión con su vida, su familia o su comunidad",
+  "Formato distinto (cómic, carta, entrevista, mapa)",
+  "Usa palabras o citas del libro en su lugar",
+  "Va más allá de lo que pide el formato",
+  "Se nota acompañamiento de la familia (declarado o visible)"
+];
+const PRODUCCION = {autonomo:"Lo escribió el alumno", dictado:"Lo dictó a un adulto", mixto:"Mixto (escribió y dictó)", oral:"Lo contó en voz alta y el docente registró"};
+const SIGUIENTE = [
+  "Modelar en voz alta cómo buscar la página que sostiene una pista",
+  "Practicar inicio-desarrollo-final con tres dibujos o tres tarjetas",
+  "Ofrecer marco de oración para opinar («Me gustó porque… / Lo sé porque en la página…»)",
+  "Recomendar un libro de su ruta ligado a un interés del Semáforo",
+  "Leer juntos un fragmento y releer para recuperar datos",
+  "Conversar con la familia sobre el momento de lectura en casa",
+  "Revisar con especialista (USAER/UDEII) si la misma necesidad se repite en varias rondas",
+  "Reconocer públicamente una decisión propia del reporte"
+];
+const ESTADOS = {
+  a_tiempo:"A tiempo", extemporaneo:"Extemporáneo", fuera_plazo:"Fuera de plazo",
+  prorroga:"Prórroga acordada", justificado:"Justificado", pendiente:"Pendiente", no_entregado:"No entregado"
+};
+const COLORES_ESTADO = {a_tiempo:"var(--ok)",extemporaneo:"var(--late)",fuera_plazo:"var(--out)",prorroga:"var(--just)",justificado:"var(--just)",pendiente:"var(--pend-bg)",no_entregado:"var(--out-bg)"};
+/* Expresiones que suelen describir rasgos fijos en lugar de situaciones */
+const DISPOSICIONAL = /\b(es|son|está|anda)\s+(muy\s+)?(flojo|floja|lento|lenta|distraíd[oa]|distraid[oa]|tímid[oa]|timid[oa]|desordenad[oa]|perezos[oa]|inquiet[oa]|agresiv[oa]|irresponsable|desinteresad[oa]|apátic[oa]|apatic[oa]|burr[oa]|malcriad[oa]|problemátic[oa]|conflictiv[oa])\b|\bno le (interesa|gusta) (leer|nada)\b|\bno quiere (hacer|trabajar|leer)\b|\bno sabe (leer|escribir|nada)\b|\bsiempre (olvida|llega tarde|se distrae)\b/i;
+
+/* ============================================================
+   ALMACENAMIENTO (solo en este navegador)
+   ============================================================ */
+const KEY = "reportes_lectura_molino_v1";
+const RONDAS_INICIALES = [{id:"R1",nombre:"Ronda 1",inicio:"2026-09-28",limite:"2026-10-09",extemporaneo:"2026-10-12"}];
+function estadoVacio(){ return {version:1, roster:[], rondas:structuredClone(RONDAS_INICIALES), registros:[], ultimoRespaldo:null}; }
+let S;
+function cargar(){
+  try{ const raw = localStorage.getItem(KEY); S = raw ? JSON.parse(raw) : estadoVacio(); }
+  catch(e){ S = estadoVacio(); aviso("No se pudo leer el almacenamiento del navegador; se inicia vacío."); }
+  if(!S.rondas || !S.rondas.length) S.rondas = structuredClone(RONDAS_INICIALES);
+}
+function guardar(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ aviso("No se pudo guardar. Descargue un respaldo ahora."); }
+}
+
+/* ============================================================
+   UTILIDADES
+   ============================================================ */
+const $ = (sel,root=document)=>root.querySelector(sel);
+const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const hoy = ()=>{ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+const fmtFecha = iso => { if(!iso) return ""; const [y,m,d]=iso.split("-"); return `${d}/${m}/${y}`; };
+const gradoDe = grupo => parseInt(grupo,10);
+const uid = ()=> Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+function aviso(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(aviso._t); aviso._t=setTimeout(()=>t.classList.remove("show"),2800); }
+function descargar(nombre, contenido, tipo){
+  const blob = new Blob([contenido],{type:tipo});
+  const a = document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=nombre;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500);
+}
+function csv(filas){
+  return "﻿"+filas.map(f=>f.map(v=>{ const s=String(v ?? ""); return /[",\n;]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }).join(",")).join("\r\n");
+}
+function barajar(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+const rondaPorId = id => S.rondas.find(r=>r.id===id);
+const alumnoPorId = id => S.roster.find(a=>a.id===id);
+const registroDe = (alumnoId, rondaId) => S.registros.find(r=>r.alumnoId===alumnoId && r.ronda===rondaId);
+let rondaActiva = null;
+function rondaSel(){ if(!rondaActiva || !rondaPorId(rondaActiva)) rondaActiva = S.rondas[0].id; return rondaPorId(rondaActiva); }
+
+/* Estado de entrega: depende de la fecha de recepción y de las fechas de la ronda */
+function estadoEntrega(alumnoId, ronda){
+  const r = registroDe(alumnoId, ronda.id);
+  if(r && r.estadoManual) return r.estadoManual;
+  if(r && r.fechaRecepcion){
+    if(r.fechaRecepcion <= ronda.limite) return "a_tiempo";
+    if(r.fechaRecepcion <= ronda.extemporaneo) return "extemporaneo";
+    return "fuera_plazo";
+  }
+  return hoy() <= ronda.extemporaneo ? "pendiente" : "no_entregado";
+}
+function completitud(reg, grado){
+  const n = SECCIONES[grado].length; let suma=0, marcadas=0;
+  for(let i=0;i<n;i++){ const v = reg.secciones?.[i]; if(v!==undefined && v!==null){ suma+=v; marcadas++; } }
+  return marcadas ? Math.round(100*suma/(2*n)) : null;
+}
+function dimAplica(dim, grado){ return dim.comun ? true : !!dim.d[banda(grado)]; }
+function descriptores(dim, grado){ return dim.comun || dim.d[banda(grado)]; }
+function revisado(reg){ return reg && (reg.secciones && Object.keys(reg.secciones).length || reg.dimensiones && Object.values(reg.dimensiones).some(v=>v)); }
+
+/* ============================================================
+   VISTAS
+   ============================================================ */
+let vista = "panel";
+let filtroGrupo = "1°A";
+let edicion = null; // {alumnoId}
+
+function sinLista(){
+  return `<section class="card"><h2>Primero cargue la lista de alumnos</h2>
+  <p>La aplicación no trae nombres guardados: así puede publicarse en GitHub sin exponer a nadie. La lista vive solo en este navegador.</p>
+  <p>Vaya a <b>Rondas y lista</b> y use <b>Cargar lista</b> con el archivo <code>roster_privado.json</code> (o un CSV con columnas <code>Alumno,Grupo</code>).</p>
+  <button class="btn" onclick="ir('config')">Ir a Rondas y lista</button></section>`;
+}
+function selectorRonda(){
+  return `<label>Ronda<select onchange="rondaActiva=this.value;render()">${S.rondas.map(r=>`<option value="${esc(r.id)}" ${r.id===rondaSel().id?"selected":""}>${esc(r.nombre)} · límite ${fmtFecha(r.limite)}</option>`).join("")}</select></label>`;
+}
+function conteo(ronda, grupo){
+  const c = Object.fromEntries(Object.keys(ESTADOS).map(k=>[k,0]));
+  S.roster.filter(a=>!grupo || a.grupo===grupo).forEach(a=>c[estadoEntrega(a.id,ronda)]++);
+  return c;
+}
+function barraEstados(c, total){
+  return `<div class="bar" role="img" aria-label="${Object.entries(c).filter(([,v])=>v).map(([k,v])=>`${ESTADOS[k]}: ${v}`).join(", ")}">${
+    Object.entries(c).filter(([,v])=>v).map(([k,v])=>`<div style="width:${100*v/total}%;background:${COLORES_ESTADO[k]}" title="${ESTADOS[k]}: ${v}"></div>`).join("")}</div>`;
+}
+function leyenda(){ return `<div class="legend">${Object.entries(ESTADOS).map(([k,v])=>`<span><i style="background:${COLORES_ESTADO[k]}"></i>${v}</span>`).join("")}</div>`; }
+
+function vistaPanel(){
+  if(!S.roster.length) return sinLista();
+  const ronda = rondaSel(); const c = conteo(ronda); const total = S.roster.length;
+  const entregados = c.a_tiempo + c.extemporaneo + c.fuera_plazo;
+  const faltan = c.pendiente + c.no_entregado;
+  const dias = Math.round((new Date(ronda.extemporaneo) - new Date(hoy()))/864e5);
+  let html = `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Panel de la ronda</h2>${selectorRonda()}</div>
+  <p class="muted">Fecha límite: <b>${fmtFecha(ronda.limite)}</b> · Extemporáneo hasta: <b>${fmtFecha(ronda.extemporaneo)}</b> · Hoy: ${fmtFecha(hoy())}${dias>=0?` · faltan ${dias} día(s) para cerrar extemporáneos`:" · ronda cerrada"}</p>
+  <div class="kpis">
+    <div class="kpi"><b>${total}</b><span>Alumnos en lista</span></div>
+    <div class="kpi"><b>${entregados}</b><span>Entregados (${total?Math.round(100*entregados/total):0}%)</span></div>
+    <div class="kpi"><b>${c.a_tiempo}</b><span>A tiempo</span></div>
+    <div class="kpi"><b>${c.extemporaneo}</b><span>Extemporáneos</span></div>
+    <div class="kpi"><b>${c.prorroga+c.justificado}</b><span>Prórroga o justificado</span></div>
+    <div class="kpi"><b>${faltan}</b><span>${dias>=0?"Pendientes":"No entregados"}</span></div>
+  </div></section>`;
+  html += `<section class="card"><h2>Entregas por grupo</h2>${leyenda()}<table><thead><tr><th>Grupo</th><th style="width:55%">Estado</th><th>Entregados</th><th>Revisados</th></tr></thead><tbody>${
+    GRUPOS.map(g=>{ const cg=conteo(ronda,g); const tg=S.roster.filter(a=>a.grupo===g).length; if(!tg) return "";
+      const eg=cg.a_tiempo+cg.extemporaneo+cg.fuera_plazo;
+      const rv=S.roster.filter(a=>a.grupo===g && revisado(registroDe(a.id,ronda.id))).length;
+      return `<tr><td><a href="#" onclick="filtroGrupo='${g}';ir('grupos');return false">${g}</a></td><td>${barraEstados(cg,tg)}</td><td>${eg} / ${tg}</td><td>${rv} / ${eg}</td></tr>`; }).join("")
+  }</tbody></table></section>`;
+  html += `<section class="card"><h2>Calidad de los reportes revisados</h2><p class="muted">Promedio de nivel (1 a 4) por dimensión, solo con reportes donde se valoró esa dimensión. Describe los reportes de esta ronda, no a los alumnos.</p><div class="tablewrap"><table><thead><tr><th>Grupo</th>${DIMENSIONES.map(d=>`<th title="${esc(d.pregunta)}">${d.id} · ${esc(d.nombre)}</th>`).join("")}<th>Completitud media</th></tr></thead><tbody>${
+    GRUPOS.map(g=>{ const regs=S.roster.filter(a=>a.grupo===g).map(a=>registroDe(a.id,ronda.id)).filter(revisado); if(!regs.length) return "";
+      const gr=gradoDe(g);
+      const celdas = DIMENSIONES.map(d=>{ if(!dimAplica(d,gr)) return `<td class="muted">no aplica</td>`; const v=regs.map(r=>r.dimensiones?.[d.id]).filter(Boolean); return `<td>${v.length?(v.reduce((x,y)=>x+y,0)/v.length).toFixed(1)+` <span class="muted">(n=${v.length})</span>`:"—"}</td>`; }).join("");
+      const comp = regs.map(r=>completitud(r,gr)).filter(v=>v!==null);
+      return `<tr><td>${g}</td>${celdas}<td>${comp.length?Math.round(comp.reduce((x,y)=>x+y,0)/comp.length)+"%":"—"}</td></tr>`; }).join("") || `<tr><td colspan="7" class="muted">Todavía no hay reportes revisados en esta ronda.</td></tr>`
+  }</tbody></table></div></section>`;
+  html += `<section class="card"><h2>Por recibir</h2><p class="muted">Lista interna para el seguimiento del día de extemporáneos. Puede copiarla por grupo.</p>${
+    GRUPOS.map(g=>{ const f=S.roster.filter(a=>a.grupo===g && ["pendiente","no_entregado"].includes(estadoEntrega(a.id,ronda))); if(!f.length) return "";
+      return `<h3>${g} · ${f.length}</h3><p style="margin:0 0 6px">${f.map(a=>`${a.nl}. ${esc(a.nombre)}`).join(" · ")}</p><button class="btn small sec noprint" onclick="copiarPendientes('${g}')">Copiar lista de ${g}</button>`; }).join("") || `<p>Nadie pendiente en esta ronda.</p>`
+  }</section>`;
+  html += recordatorioRespaldo();
+  return html;
+}
+function recordatorioRespaldo(){
+  if(!S.registros.length) return "";
+  const ult = S.ultimoRespaldo ? new Date(S.ultimoRespaldo) : null;
+  const horas = ult ? (Date.now()-ult)/36e5 : Infinity;
+  if(horas < 24) return "";
+  return `<div class="warn noprint">${ult?`Último respaldo: ${ult.toLocaleString("es-MX")}.`:"Aún no descarga ningún respaldo."} Los datos viven solo en este navegador; si se borra el historial, se pierden. <button class="btn small" onclick="respaldo()">Descargar respaldo ahora</button></div>`;
+}
+function copiarPendientes(g){
+  const ronda=rondaSel();
+  const t = S.roster.filter(a=>a.grupo===g && ["pendiente","no_entregado"].includes(estadoEntrega(a.id,ronda))).map(a=>`${a.nl}. ${a.nombre}`).join("\n");
+  navigator.clipboard?.writeText(`${g} · ${ronda.nombre} · por recibir\n${t}`).then(()=>aviso("Lista copiada"),()=>aviso("No se pudo copiar"));
+}
+
+function vistaGrupos(){
+  if(!S.roster.length) return sinLista();
+  const ronda = rondaSel();
+  const lista = S.roster.filter(a=>a.grupo===filtroGrupo).sort((a,b)=>a.nl-b.nl);
+  return `<section class="card"><div class="row" style="justify-content:space-between">
+    <h2 style="margin:0">Entregas por grupo</h2>
+    <div class="row"><label>Grupo<select onchange="filtroGrupo=this.value;render()">${GRUPOS.map(g=>`<option ${g===filtroGrupo?"selected":""}>${g}</option>`).join("")}</select></label>${selectorRonda()}</div></div>
+  <p class="muted">«Recibido hoy» registra la entrega con la fecha de hoy (${fmtFecha(hoy())}). Si lo recibió otro día, escriba la fecha. La revisión del contenido se hace después, en «Revisar».</p>
+  <div class="tablewrap"><table><thead><tr><th>N.L.</th><th>Alumno</th><th>Estado</th><th>Recibido</th><th class="noprint">Acciones</th></tr></thead><tbody>${
+    lista.map(a=>{ const r=registroDe(a.id,ronda.id); const e=estadoEntrega(a.id,ronda);
+      return `<tr><td>${a.nl}</td><td>${esc(a.nombre)}${a.nota?` <span class="muted" title="${esc(a.nota)}">(*)</span>`:""}${revisado(r)?` <span class="chip" style="background:var(--teal-2)">revisado</span>`:""}</td>
+      <td><span class="chip e-${e}" id="chip-${a.id}">${ESTADOS[e]}</span></td>
+      <td><input type="date" value="${r?.fechaRecepcion||""}" aria-label="Fecha de recepción de ${esc(a.nombre)}" onchange="fijarFecha('${a.id}',this.value)"></td>
+      <td class="noprint"><div class="row" style="gap:4px">
+        <button class="btn small" onclick="fijarFecha('${a.id}',hoy())">Recibido hoy</button>
+        <select aria-label="Estado especial" onchange="fijarManual('${a.id}',this.value)">
+          <option value="">Estado especial…</option>
+          <option value="prorroga" ${r?.estadoManual==="prorroga"?"selected":""}>Prórroga acordada</option>
+          <option value="justificado" ${r?.estadoManual==="justificado"?"selected":""}>Justificado</option>
+          <option value="__quitar">Quitar estado especial</option>
+        </select>
+        <button class="btn small sec" onclick="abrirRevision('${a.id}')">Revisar</button>
+        ${r?`<button class="btn small danger" onclick="borrarRegistro('${a.id}')" title="Borrar registro de esta ronda">×</button>`:""}
+      </div></td></tr>`; }).join("")
+  }</tbody></table></div></section>${recordatorioRespaldo()}`;
+}
+function obtenerRegistro(alumnoId, rondaId, crear=true){
+  let r = registroDe(alumnoId, rondaId);
+  if(!r && crear){ r = {id:uid(), alumnoId, ronda:rondaId, numReporte:"", fechaRecepcion:"", estadoManual:"", libro:{titulo:"",autor:"",folio:"",deRuta:""}, produccion:"", secciones:{}, dimensiones:{}, personalizacion:[], siguiente:[], observacion:"", fotos:"", actualizado:""}; S.registros.push(r); }
+  return r;
+}
+function tocar(r){ r.actualizado = new Date().toISOString(); guardar(); }
+/* En la tabla de grupo se actualiza solo la fila: así un clic en la fila siguiente
+   no se pierde cuando el cambio de fecha se confirma al salir del campo. */
+function refrescarFila(alumnoId){
+  const chip = document.getElementById("chip-"+alumnoId);
+  if(vista!=="grupos" || !chip) return render();
+  const e = estadoEntrega(alumnoId, rondaSel());
+  chip.className = "chip e-"+e; chip.textContent = ESTADOS[e];
+  const fila = chip.closest("tr"); const f = fila.querySelector("input[type=date]");
+  const r = registroDe(alumnoId, rondaSel().id); if(f) f.value = r?.fechaRecepcion || "";
+  const sel = fila.querySelector("select"); if(sel) sel.value = r?.estadoManual || "";
+}
+function fijarFecha(alumnoId, fecha){
+  const r = obtenerRegistro(alumnoId, rondaSel().id); r.fechaRecepcion = fecha; tocar(r); refrescarFila(alumnoId);
+  const a = alumnoPorId(alumnoId);
+  if(fecha) aviso(`${a.grupo} n.º ${a.nl}: ${ESTADOS[estadoEntrega(alumnoId,rondaSel())]}`);
+}
+function fijarManual(alumnoId, v){
+  if(!v) return; const r = obtenerRegistro(alumnoId, rondaSel().id);
+  r.estadoManual = v==="__quitar" ? "" : v; tocar(r); refrescarFila(alumnoId);
+}
+function borrarRegistro(alumnoId){
+  const a=alumnoPorId(alumnoId);
+  if(!confirm(`¿Borrar el registro de ${a.nombre} en ${rondaSel().nombre}? Se pierden fecha y revisión.`)) return;
+  S.registros = S.registros.filter(r=>!(r.alumnoId===alumnoId && r.ronda===rondaSel().id)); guardar(); render();
+}
+function abrirRevision(alumnoId){ edicion={alumnoId}; ir("registrar"); }
+
+function seg(nombre, opciones, valor, onchange){
+  return `<span class="seg" role="radiogroup">${opciones.map(([v,t])=>`<label><input type="radio" name="${nombre}" value="${v}" ${String(valor)===String(v)?"checked":""} onchange="${onchange}"><span>${t}</span></label>`).join("")}</span>`;
+}
+function vistaRegistrar(){
+  if(!S.roster.length) return sinLista();
+  const ronda = rondaSel();
+  const grupo = edicion ? alumnoPorId(edicion.alumnoId)?.grupo : filtroGrupo;
+  const lista = S.roster.filter(a=>a.grupo===grupo).sort((a,b)=>a.nl-b.nl);
+  const sel = edicion?.alumnoId && alumnoPorId(edicion.alumnoId) ? alumnoPorId(edicion.alumnoId) : null;
+  let html = `<section class="card"><h2>Revisar reporte</h2><div class="row">
+    <label>Grupo<select onchange="filtroGrupo=this.value;edicion=null;render()">${GRUPOS.map(g=>`<option ${g===grupo?"selected":""}>${g}</option>`).join("")}</select></label>
+    <label>Alumno<select onchange="edicion=this.value?{alumnoId:this.value}:null;render()"><option value="">Elija…</option>${lista.map(a=>`<option value="${a.id}" ${sel?.id===a.id?"selected":""}>${a.nl}. ${esc(a.nombre)} — ${ESTADOS[estadoEntrega(a.id,ronda)]}</option>`).join("")}</select></label>
+    ${selectorRonda()}</div>
+    <div class="note">Los niveles describen <b>lo que muestra este reporte</b>, con los apoyos que tuvo. No califican cómo «es» el alumno. Si una dimensión no se puede observar en este reporte, déjela en «Sin evidencia».</div></section>`;
+  if(!sel) return html;
+  const grado = gradoDe(sel.grupo);
+  const r = registroDe(sel.id, ronda.id) || {libro:{},secciones:{},dimensiones:{},personalizacion:[],siguiente:[]};
+  const e = estadoEntrega(sel.id, ronda);
+  const comp = completitud(r, grado);
+  html += `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(sel.nombre)} · ${sel.grupo}</h2><span class="chip e-${e}">${ESTADOS[e]}</span></div>
+  <h3>Entrega</h3><div class="row">
+    <label>Fecha de recepción<input type="date" value="${r.fechaRecepcion||""}" onchange="campo('fechaRecepcion',this.value)"></label>
+    <label>N.º de reporte<input type="number" min="1" style="width:90px" value="${esc(r.numReporte||"")}" onchange="campo('numReporte',this.value)"></label>
+    <label>Fotografía(s) de origen<input type="text" placeholder="p. ej. 20261009_101500.jpg" value="${esc(r.fotos||"")}" onchange="campo('fotos',this.value)"></label>
+  </div>
+  <h3>Libro</h3><div class="row">
+    <label style="flex:2 1 220px">Título<input type="text" value="${esc(r.libro?.titulo||"")}" onchange="campoLibro('titulo',this.value)"></label>
+    <label style="flex:1 1 160px">Autor(a)<input type="text" value="${esc(r.libro?.autor||"")}" onchange="campoLibro('autor',this.value)"></label>
+    <label>Folio BV<input type="text" style="width:110px" placeholder="BV-0000" value="${esc(r.libro?.folio||"")}" onchange="campoLibro('folio',this.value)"></label>
+    <label>¿De su ruta lectora?<select onchange="campoLibro('deRuta',this.value)"><option value="">Sin dato</option><option value="si" ${r.libro?.deRuta==="si"?"selected":""}>Sí</option><option value="no" ${r.libro?.deRuta==="no"?"selected":""}>No, lo eligió fuera de la ruta</option></select></label>
+  </div>
+  <h3>¿Cómo se produjo?</h3>${seg("prod", Object.entries(PRODUCCION), r.produccion||"", "campo('produccion',this.value)")}
+  <p class="muted" style="font-size:.82rem">Dictar o contar en voz alta es una vía válida de expresión (DUA). Se registra para leer bien los datos, no para restar.</p>
+  </section>`;
+  html += `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Apartados del formato de ${grado}.°</h2><span class="muted">Completitud: <b>${comp===null?"—":comp+"%"}</b></span></div>
+  ${SECCIONES[grado].map((s,i)=>`<div class="secrow"><span>${i===0?"":i+". "}${esc(s)}</span>${seg("s"+i,[["0","Falta"],["1","Parcial"],["2","Completo"]], r.secciones?.[i] ?? "", `seccion(${i},this.value)`)}</div>`).join("")}
+  <p class="muted" style="font-size:.82rem">Completo = tiene lo que pide la indicación del apartado. Parcial = está, pero le falta una parte. Falta = no aparece.</p></section>`;
+  html += `<section class="card"><h2>Calidad: cinco dimensiones</h2>${
+    DIMENSIONES.map(d=>{ if(!dimAplica(d,grado)) return `<div class="dim muted"><b>${d.id} · ${esc(d.nombre)}</b> — no aplica en ${grado}.° (su formato todavía no pide este paso).</div>`;
+      const desc = descriptores(d,grado); const v = r.dimensiones?.[d.id] || "";
+      return `<div class="dim"><b>${d.id} · ${esc(d.nombre)}</b> <span class="muted">— ${esc(d.pregunta)}</span><div style="margin-top:6px">${seg("d"+d.id,[["","Sin evidencia"],...NIVELES.map((n,i)=>[String(i+1),`${i+1} ${n}`])], v, `dimension('${d.id}',this.value)`)}</div>
+      <details ${v?"open":""}><summary>Ver descriptores para ${grado}.°</summary><ol>${desc.map((t,i)=>`<li${String(i+1)===String(v)?' style="font-weight:600"':""}><b>${NIVELES[i]}:</b> ${esc(t)}</li>`).join("")}</ol></details></div>`; }).join("")
+  }</section>`;
+  html += `<section class="card"><h2>Decisiones propias del reporte</h2><p class="muted">Cada reporte es personal. Marque lo que el alumno eligió hacer; esto alimenta la dimensión D5 y se puede graficar sin nombres.</p>
+  <div class="checks">${PERSONALIZACION.map((p,i)=>`<label><input type="checkbox" ${r.personalizacion?.includes(i)?"checked":""} onchange="lista('personalizacion',${i},this.checked)">${esc(p)}</label>`).join("")}</div>
+  <h3>Siguiente paso de acompañamiento</h3><div class="checks">${SIGUIENTE.map((p,i)=>`<label><input type="checkbox" ${r.siguiente?.includes(i)?"checked":""} onchange="lista('siguiente',${i},this.checked)">${esc(p)}</label>`).join("")}</div>
+  <h3>Observación situacional (solo interna, nunca se exporta sin nombres)</h3>
+  <textarea id="obs" placeholder="Qué se ve en el reporte, en qué apartado, con qué apoyo. Ej.: «En el apartado 5 escribió la pista, pero sin página; al preguntarle en el salón la encontró en la p. 12.»" oninput="revisarObs(this.value)" onchange="campo('observacion',this.value)">${esc(r.observacion||"")}</textarea>
+  <div id="obsWarn" class="warn hidden">Esta frase describe un rasgo fijo. ¿Puede contarla como situación? Diga dónde, cuándo y con qué apoyo ocurre (por ejemplo, «con textos largos sin imágenes deja el apartado incompleto; con libros cortos de animales lo termina»).</div>
+  </section>`;
+  setTimeout(()=>revisarObs(r.observacion||""),0);
+  return html;
+}
+function regActual(){ return obtenerRegistro(edicion.alumnoId, rondaSel().id); }
+function campo(k,v){ const r=regActual(); r[k]=v; tocar(r); if(["fechaRecepcion","produccion"].includes(k)) render(); }
+function campoLibro(k,v){ const r=regActual(); r.libro = r.libro||{}; r.libro[k]=v; tocar(r); }
+function seccion(i,v){ const r=regActual(); r.secciones=r.secciones||{}; r.secciones[i]=Number(v); tocar(r); render(); }
+function dimension(id,v){ const r=regActual(); r.dimensiones=r.dimensiones||{}; if(v) r.dimensiones[id]=Number(v); else delete r.dimensiones[id]; tocar(r); render(); }
+function lista(k,i,on){ const r=regActual(); const a=new Set(r[k]||[]); on?a.add(i):a.delete(i); r[k]=[...a].sort((x,y)=>x-y); tocar(r); }
+function revisarObs(t){ const w=$("#obsWarn"); if(w) w.classList.toggle("hidden", !DISPOSICIONAL.test(t)); }
+
+function vistaCriterios(){
+  const tabla = g => `<div class="tablewrap"><table><thead><tr><th>Dimensión</th>${NIVELES.map((n,i)=>`<th>${i+1} · ${n}</th>`).join("")}</tr></thead><tbody>${
+    DIMENSIONES.map(d=>{ const desc = d.comun || d.d[g]; return desc ? `<tr><td><b>${d.id} · ${esc(d.nombre)}</b><br><span class="muted">${esc(d.pregunta)}</span></td>${desc.map(t=>`<td>${esc(t)}</td>`).join("")}</tr>` : `<tr><td><b>${d.id} · ${esc(d.nombre)}</b></td><td colspan="4" class="muted">No aplica: el formato de estos grados todavía no pide este paso.</td></tr>`; }).join("")
+  }</tbody></table></div>`;
+  return `<section class="card"><h2>Por qué estos criterios</h2>
+  <p>Cada alumno arma su reporte a su manera: pega las tiras donde termina, dibuja, dicta o copia encabezados. Por eso conviene separar tres preguntas que suelen mezclarse en una sola calificación:</p>
+  <ol>
+    <li><b>¿Lo entregó y cuándo?</b> Es el control de entregas. Se calcula solo con la fecha de recepción y las fechas de la ronda, para que nadie dependa de la memoria del docente.</li>
+    <li><b>¿Están los apartados que pide su formato?</b> Es la completitud. Usa exactamente los apartados del formato de cuaderno de cada grado.</li>
+    <li><b>¿Qué tan bien muestra que entendió el libro?</b> Son las cinco dimensiones. Siguen la misma escalera que ya pide el formato: primero recuperar lo que dice el texto, luego contarlo con sus palabras, después leer entre líneas con una pista, y opinar con razones.</li>
+  </ol>
+  <p>La quinta dimensión, <b>Lo hace suyo</b>, existe porque los reportes son personales. Un dibujo que explica, una conexión con el videojuego que más le gusta o una carta al personaje son decisiones que dicen mucho de cómo se está apropiando de la lectura. Se registran como casillas para poder contarlas y graficarlas sin nombres.</p>
+  <p>La forma de producción (escrito, dictado, mixto, oral) se anota y no resta. En 1.° y 2.° el formato permite dictar; en cualquier grado, un alumno que dicta sigue mostrando comprensión. Anotarlo evita leer mal los datos después.</p>
+  <p>«Sin evidencia» es distinto de «Inicio». Si el reporte no trae el apartado de la pista, la dimensión D3 queda sin evidencia: lo que falta se ve en completitud y no se convierte en un nivel bajo.</p>
+  <p>Los niveles describen el reporte de una ronda. Al comparar rondas se ve el avance, y cuando una misma necesidad se repite, el siguiente paso propone conversar con la familia o revisar con el equipo especialista: casa, escuela y especialistas mirando el mismo dato.</p>
+  </section>
+  <section class="card"><h2>Estados de entrega</h2><table><tbody>
+   <tr><td><span class="chip e-a_tiempo">A tiempo</span></td><td>Recibido hasta la fecha límite de la ronda.</td></tr>
+   <tr><td><span class="chip e-extemporaneo">Extemporáneo</span></td><td>Recibido después de la fecha límite y hasta el día de extemporáneos.</td></tr>
+   <tr><td><span class="chip e-fuera_plazo">Fuera de plazo</span></td><td>Recibido después del día de extemporáneos. Se registra igual: el reporte cuenta para la lectura aunque no para el plazo.</td></tr>
+   <tr><td><span class="chip e-prorroga">Prórroga acordada</span></td><td>Hubo un acuerdo previo con la familia o con el equipo especialista.</td></tr>
+   <tr><td><span class="chip e-justificado">Justificado</span></td><td>Ausencia o situación justificada.</td></tr>
+   <tr><td><span class="chip e-pendiente">Pendiente</span></td><td>Sin recibir, y la ronda sigue abierta.</td></tr>
+   <tr><td><span class="chip e-no_entregado">No entregado</span></td><td>Sin recibir, y ya pasó el día de extemporáneos.</td></tr>
+  </tbody></table></section>
+  <section class="card"><h2>Descriptores · 1.° y 2.°</h2>${tabla("A")}</section>
+  <section class="card"><h2>Descriptores · 3.° y 4.°</h2>${tabla("B")}</section>
+  <section class="card"><h2>Descriptores · 5.° y 6.°</h2>${tabla("C")}</section>`;
+}
+
+function vistaDatos(){
+  return `<section class="card"><h2>Datos sin nombres para trabajar con 5.° y 6.°</h2>
+  <p>Estos archivos no llevan nombres, número de lista, fechas exactas ni observaciones. El orden de las filas se revuelve en cada descarga y cada fila recibe un código al azar distinto cada vez.</p>
+  <div class="row"><fieldset style="border:1px solid var(--line);border-radius:8px"><legend class="muted" style="font-size:.85rem">Grados que se incluyen</legend>
+  <div class="row">${GRUPOS.map(g=>`<label style="flex-direction:row;gap:4px;color:var(--ink)"><input type="checkbox" class="gsel" value="${g}" checked>${g}</label>`).join("")}</div></fieldset>
+  <label style="flex-direction:row;gap:6px;color:var(--ink)"><input type="checkbox" id="conTitulo"> Incluir título del libro</label></div>
+  <div class="warn">El título del libro puede delatar a quién pertenece un reporte cuando pocos alumnos leyeron ese libro. Inclúyalo solo si el grupo lo va a usar para una gráfica de libros más leídos y lo revisó antes.</div>
+  <div class="row" style="margin-top:8px">
+    <button class="btn" onclick="exportarAgregado()">Tabla resumida por grado (recomendada)</button>
+    <button class="btn sec" onclick="exportarAnonimo()">Una fila por reporte, sin nombres</button>
+  </div>
+  <p class="muted" style="font-size:.84rem">La tabla resumida trae conteos por grado y estado, distribución de niveles por dimensión y frecuencia de cada decisión propia. Es la más segura para graficar en clase.</p></section>
+  <section class="card"><h2>Respaldos internos (con nombres)</h2>
+  <p>Guarde estos archivos en su computadora o en una carpeta privada. <b>No los suba al repositorio de GitHub.</b></p>
+  <div class="row">
+    <button class="btn" onclick="respaldo()">Descargar respaldo completo (.json)</button>
+    <button class="btn sec" onclick="exportarInterno()">Registro completo para Excel (.csv)</button>
+    <label class="btn sec" style="flex-direction:row;cursor:pointer;color:var(--teal)">Restaurar o combinar respaldo<input type="file" accept=".json" class="hidden" onchange="importarJSON(this.files[0]);this.value=''"></label>
+  </div>
+  <p class="muted" style="font-size:.84rem">Restaurar acepta el respaldo completo y también los archivos <code>registros_*.json</code> que Claude le prepare a partir de las fotografías: se combinan con lo que ya hay, alumno por alumno y ronda por ronda.</p>
+  ${S.ultimoRespaldo?`<p class="muted">Último respaldo: ${new Date(S.ultimoRespaldo).toLocaleString("es-MX")}</p>`:""}</section>`;
+}
+function gradosElegidos(){ return [...document.querySelectorAll(".gsel:checked")].map(x=>x.value); }
+function registrosPara(grupos){
+  const out=[];
+  S.registros.forEach(r=>{ const a=alumnoPorId(r.alumnoId); const ronda=rondaPorId(r.ronda); if(!a||!ronda||!grupos.includes(a.grupo)) return; out.push({r,a,ronda}); });
+  return out;
+}
+function exportarAnonimo(){
+  const grupos=gradosElegidos(); if(!grupos.length) return aviso("Elija al menos un grado");
+  const conTitulo=$("#conTitulo").checked;
+  const filas = barajar(registrosPara(grupos).filter(x=>x.r.fechaRecepcion||x.r.estadoManual));
+  const pocos = grupos.filter(g=>filas.filter(x=>x.a.grupo===g).length>0 && filas.filter(x=>x.a.grupo===g).length<5);
+  if(pocos.length && !confirm(`En ${pocos.join(", ")} hay menos de 5 reportes. Con tan pocas filas el grupo podría adivinar de quién es cada una. ¿Descargar de todos modos?`)) return;
+  const cab=["codigo","grado","ronda","estado","produccion","completitud_pct",...DIMENSIONES.map(d=>`${d.id}_${d.nombre.replace(/\s+/g,"_").normalize("NFD").replace(/[̀-ͯ]/g,"")}`),"num_decisiones_propias",...PERSONALIZACION.map((p,i)=>`P${i+1}`),"de_ruta",...(conTitulo?["titulo_libro"]:[])];
+  const usados=new Set(); const codigo=()=>{ let c; do{ c="R-"+Math.random().toString(36).slice(2,6).toUpperCase(); }while(usados.has(c)); usados.add(c); return c; };
+  const rows=filas.map(({r,a,ronda})=>{ const g=gradoDe(a.grupo); return [codigo(), g+"°", ronda.nombre, ESTADOS[estadoEntrega(a.id,ronda)], PRODUCCION[r.produccion]||"", completitud(r,g)??"", ...DIMENSIONES.map(d=>dimAplica(d,g)?(r.dimensiones?.[d.id]||""):"no aplica"), (r.personalizacion||[]).length, ...PERSONALIZACION.map((_,i)=>(r.personalizacion||[]).includes(i)?1:0), r.libro?.deRuta==="si"?"sí":r.libro?.deRuta==="no"?"no":"", ...(conTitulo?[r.libro?.titulo||""]:[])]; });
+  const leyendaP = PERSONALIZACION.map((p,i)=>[`P${i+1}`,p]);
+  descargar(`reportes_sin_nombres_${hoy()}.csv`, csv([cab,...rows,[],["Clave de columnas P"],...leyendaP]), "text/csv;charset=utf-8");
+}
+function exportarAgregado(){
+  const grupos=gradosElegidos(); if(!grupos.length) return aviso("Elija al menos un grado");
+  const out=[["Tabla 1. Entregas por grado y estado"],["ronda","grado",...Object.values(ESTADOS),"total_en_lista"]];
+  S.rondas.forEach(ronda=>grupos.forEach(g=>{ const c=conteo(ronda,g); out.push([ronda.nombre,g,...Object.keys(ESTADOS).map(k=>c[k]),S.roster.filter(a=>a.grupo===g).length]); }));
+  out.push([],["Tabla 2. Reportes por nivel en cada dimensión (solo reportes revisados)"],["ronda","grado","dimension","sin_evidencia",...NIVELES]);
+  S.rondas.forEach(ronda=>grupos.forEach(g=>{ const gr=gradoDe(g); const regs=S.roster.filter(a=>a.grupo===g).map(a=>registroDe(a.id,ronda.id)).filter(revisado);
+    DIMENSIONES.forEach(d=>{ if(!dimAplica(d,gr)) return; const n=[0,0,0,0,0]; regs.forEach(r=>n[r.dimensiones?.[d.id]||0]++); out.push([ronda.nombre,g,`${d.id} ${d.nombre}`,...n]); }); }));
+  out.push([],["Tabla 3. Decisiones propias en los reportes"],["ronda","grado","decision","reportes_que_la_tienen","reportes_revisados"]);
+  S.rondas.forEach(ronda=>grupos.forEach(g=>{ const regs=S.roster.filter(a=>a.grupo===g).map(a=>registroDe(a.id,ronda.id)).filter(revisado);
+    PERSONALIZACION.forEach((p,i)=>out.push([ronda.nombre,g,p,regs.filter(r=>(r.personalizacion||[]).includes(i)).length,regs.length])); }));
+  out.push([],["Tabla 4. Cómo se produjeron los reportes"],["ronda","grado",...Object.values(PRODUCCION),"sin_dato"]);
+  S.rondas.forEach(ronda=>grupos.forEach(g=>{ const regs=S.roster.filter(a=>a.grupo===g).map(a=>registroDe(a.id,ronda.id)).filter(r=>r&&(r.fechaRecepcion||revisado(r)));
+    out.push([ronda.nombre,g,...Object.keys(PRODUCCION).map(k=>regs.filter(r=>r.produccion===k).length),regs.filter(r=>!r.produccion).length]); }));
+  descargar(`reportes_resumen_por_grado_${hoy()}.csv`, csv(out), "text/csv;charset=utf-8");
+}
+function exportarInterno(){
+  const cab=["grupo","nl","alumno","ronda","n_reporte","fecha_recepcion","estado","produccion","titulo","autor","folio_bv","de_ruta","completitud_pct",...DIMENSIONES.map(d=>d.id),"decisiones_propias","siguiente_paso","observacion","fotos","actualizado"];
+  const rows=[];
+  S.rondas.forEach(ronda=>S.roster.slice().sort((a,b)=>GRUPOS.indexOf(a.grupo)-GRUPOS.indexOf(b.grupo)||a.nl-b.nl).forEach(a=>{
+    const r=registroDe(a.id,ronda.id)||{}; const g=gradoDe(a.grupo);
+    rows.push([a.grupo,a.nl,a.nombre,ronda.nombre,r.numReporte||"",r.fechaRecepcion?fmtFecha(r.fechaRecepcion):"",ESTADOS[estadoEntrega(a.id,ronda)],PRODUCCION[r.produccion]||"",r.libro?.titulo||"",r.libro?.autor||"",r.libro?.folio||"",r.libro?.deRuta||"",r.secciones?completitud(r,g)??"":"",...DIMENSIONES.map(d=>dimAplica(d,g)?(r.dimensiones?.[d.id]||""):"n/a"),(r.personalizacion||[]).map(i=>PERSONALIZACION[i]).join(" | "),(r.siguiente||[]).map(i=>SIGUIENTE[i]).join(" | "),r.observacion||"",r.fotos||"",r.actualizado||""]);
+  }));
+  descargar(`INTERNO_reportes_lectura_${hoy()}.csv`, csv([cab,...rows]), "text/csv;charset=utf-8");
+}
+function respaldo(){
+  S.ultimoRespaldo=new Date().toISOString(); guardar();
+  descargar(`INTERNO_respaldo_reportes_${hoy()}.json`, JSON.stringify(S,null,1), "application/json");
+  render();
+}
+function leerArchivo(f){ return new Promise((ok,mal)=>{ const fr=new FileReader(); fr.onload=()=>ok(fr.result); fr.onerror=mal; fr.readAsText(f,"utf-8"); }); }
+async function importarJSON(f){
+  if(!f) return;
+  let d; try{ d=JSON.parse(await leerArchivo(f)); }catch(e){ return aviso("El archivo no es un JSON válido"); }
+  if(d.tipo==="roster_privado"){ return aplicarRoster(d.alumnos); }
+  if(d.version && Array.isArray(d.registros) && Array.isArray(d.roster)){
+    if(!confirm(`Respaldo con ${d.roster.length} alumnos y ${d.registros.length} registros.\nAceptar = reemplazar todo lo actual.\nCancelar = combinar con lo actual.`)){ combinar(d.registros, d.rondas); return; }
+    S=d; guardar(); render(); return aviso("Respaldo restaurado");
+  }
+  if(d.tipo==="registros_reporte_lectura" && Array.isArray(d.registros)){ combinar(d.registros, d.rondas||[]); return; }
+  aviso("No reconozco el formato de este archivo");
+}
+function combinar(registros, rondas){
+  (rondas||[]).forEach(r=>{ if(!rondaPorId(r.id)) S.rondas.push(r); });
+  let nuevos=0, act=0, omitidos=[];
+  registros.forEach(n=>{
+    if(!alumnoPorId(n.alumnoId) || !rondaPorId(n.ronda)){ omitidos.push(n.alumnoId); return; }
+    const r=registroDe(n.alumnoId,n.ronda);
+    if(!r){ S.registros.push({...obtenerRegistroVacio(n.alumnoId,n.ronda),...n,id:uid()}); nuevos++; }
+    else if(!r.actualizado || (n.actualizado||"") >= r.actualizado){ Object.assign(r,{...n,id:r.id}); act++; }
+  });
+  guardar(); render();
+  aviso(`${nuevos} nuevos, ${act} actualizados${omitidos.length?`, ${omitidos.length} omitidos (alumno o ronda no encontrados)`:""}`);
+}
+function obtenerRegistroVacio(alumnoId,ronda){ return {alumnoId, ronda, numReporte:"", fechaRecepcion:"", estadoManual:"", libro:{titulo:"",autor:"",folio:"",deRuta:""}, produccion:"", secciones:{}, dimensiones:{}, personalizacion:[], siguiente:[], observacion:"", fotos:"", actualizado:""}; }
+
+function vistaConfig(){
+  return `<section class="card"><h2>Rondas de entrega</h2>
+  <p class="muted">El estado de cada entrega se calcula con estas fechas. Puede corregirlas sin perder registros.</p>
+  <div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Inicio</th><th>Fecha límite</th><th>Extemporáneo hasta</th><th></th></tr></thead><tbody>${
+    S.rondas.map((r,i)=>`<tr><td><input type="text" value="${esc(r.nombre)}" onchange="editarRonda(${i},'nombre',this.value)"></td>
+    <td><input type="date" value="${r.inicio||""}" onchange="editarRonda(${i},'inicio',this.value)"></td>
+    <td><input type="date" value="${r.limite}" onchange="editarRonda(${i},'limite',this.value)"></td>
+    <td><input type="date" value="${r.extemporaneo}" onchange="editarRonda(${i},'extemporaneo',this.value)"></td>
+    <td>${S.rondas.length>1 && !S.registros.some(x=>x.ronda===r.id)?`<button class="btn small danger" onclick="quitarRonda(${i})">Quitar</button>`:""}</td></tr>`).join("")
+  }</tbody></table></div>
+  <button class="btn sec" style="margin-top:8px" onclick="agregarRonda()">Agregar ronda</button></section>
+  <section class="card"><h2>Lista de alumnos</h2>
+  <p>${S.roster.length?`Lista cargada: <b>${S.roster.length}</b> alumnos (${GRUPOS.map(g=>`${g}: ${S.roster.filter(a=>a.grupo===g).length}`).join(" · ")}).`:"No hay lista cargada."}</p>
+  <div class="row"><label class="btn" style="flex-direction:row;cursor:pointer;color:var(--teal-ink)">Cargar lista (.json o .csv)<input type="file" accept=".json,.csv" class="hidden" onchange="cargarLista(this.files[0]);this.value=''"></label></div>
+  <p class="muted" style="font-size:.84rem">CSV aceptado: columnas <code>Alumno,Grupo</code> (como en «Listas actuales.xlsx», guardado como CSV UTF-8). El número de lista se asigna en el orden del archivo dentro de cada grupo. Al recargar, los alumnos que ya existen conservan sus registros.</p>
+  <div class="note">La lista y los registros se guardan solo en este navegador (almacenamiento local). Nada se envía a GitHub ni a internet.</div></section>
+  <section class="card"><h2>Borrar todo de este navegador</h2><p class="muted">Útil si usó una computadora compartida. Descargue antes un respaldo.</p><button class="btn danger" onclick="borrarTodo()">Borrar lista y registros</button></section>`;
+}
+function editarRonda(i,k,v){
+  const r=S.rondas[i]; r[k]=v;
+  if(r.extemporaneo < r.limite) aviso("Atención: el día de extemporáneos es anterior a la fecha límite");
+  guardar(); render();
+}
+function agregarRonda(){
+  const ult=S.rondas[S.rondas.length-1]; const n=S.rondas.length+1;
+  const mas = (iso,d)=>{ const t=new Date(iso+"T12:00:00"); t.setDate(t.getDate()+d); return t.toISOString().slice(0,10); };
+  S.rondas.push({id:"R"+n+"-"+uid().slice(0,4), nombre:"Ronda "+n, inicio:mas(ult.extemporaneo,1), limite:mas(ult.limite,14), extemporaneo:mas(ult.extemporaneo,14)});
+  guardar(); render(); aviso("Ronda agregada; revise las fechas");
+}
+function quitarRonda(i){ S.rondas.splice(i,1); guardar(); render(); }
+function borrarTodo(){ if(confirm("¿Borrar TODA la lista y TODOS los registros de este navegador?") && confirm("Confirme de nuevo: esta acción no se puede deshacer.")){ localStorage.removeItem(KEY); cargar(); render(); aviso("Datos borrados"); } }
+async function cargarLista(f){
+  if(!f) return; const txt=await leerArchivo(f);
+  if(f.name.toLowerCase().endsWith(".json")){ try{ const d=JSON.parse(txt); return aplicarRoster(d.alumnos||d); }catch(e){ return aviso("JSON no válido"); } }
+  const lineas=txt.replace(/^﻿/,"").split(/\r?\n/).filter(l=>l.trim());
+  const sep = lineas[0].includes(";") && !lineas[0].includes(",") ? ";" : ",";
+  const cab = lineas[0].split(sep).map(s=>s.trim().toLowerCase());
+  const iA=cab.findIndex(c=>c.startsWith("alumno")||c.startsWith("nombre")), iG=cab.findIndex(c=>c.startsWith("grupo"));
+  if(iA<0||iG<0) return aviso("El CSV necesita columnas Alumno y Grupo");
+  const cuenta={}; const al=[];
+  lineas.slice(1).forEach(l=>{ const c=l.split(sep); const nom=(c[iA]||"").replace(/"/g,"").trim(); const g=(c[iG]||"").replace(/"/g,"").trim().replace(/º/g,"°");
+    if(!nom||!GRUPOS.includes(g)) return; cuenta[g]=(cuenta[g]||0)+1;
+    const nota = nom.includes("(*)") ? "Marca (*) en la lista original" : "";
+    al.push({id:`${g[0]}A-${String(cuenta[g]).padStart(2,"0")}`, grupo:g, nl:cuenta[g], nombre:nom.replace("(*)","").trim().toLowerCase().replace(/(^|\s)\S/g,m=>m.toUpperCase()), nota}); });
+  aplicarRoster(al);
+}
+function aplicarRoster(al){
+  if(!Array.isArray(al)||!al.length) return aviso("La lista está vacía");
+  const ok = al.every(a=>a.id&&a.grupo&&a.nombre&&a.nl);
+  if(!ok) return aviso("Formato de lista no reconocido");
+  const huerfanos = S.registros.filter(r=>!al.some(a=>a.id===r.alumnoId)).length;
+  if(huerfanos && !confirm(`${huerfanos} registro(s) pertenecen a alumnos que no están en la nueva lista. Se conservarán, pero no se verán hasta que vuelvan a aparecer. ¿Continuar?`)) return;
+  S.roster = al.map(a=>({id:a.id,grupo:a.grupo,nl:Number(a.nl),nombre:a.nombre,nota:a.nota||""}));
+  guardar(); render(); aviso(`Lista cargada: ${S.roster.length} alumnos`);
+}
+
+/* ============================================================
+   NAVEGACIÓN
+   ============================================================ */
+const VISTAS = {panel:vistaPanel, grupos:vistaGrupos, registrar:vistaRegistrar, criterios:vistaCriterios, datos:vistaDatos, config:vistaConfig};
+function ir(v){ vista=v; render(); window.scrollTo(0,0); }
+function render(){
+  const y = window.scrollY;
+  document.querySelectorAll("#nav button").forEach(b=> b.dataset.view===vista ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current"));
+  $("#app").innerHTML = VISTAS[vista]();
+  window.scrollTo(0,y);
+}
+$("#nav").addEventListener("click", e=>{ const b=e.target.closest("button[data-view]"); if(b){ if(b.dataset.view!=="registrar") edicion=null; ir(b.dataset.view); } });
+cargar(); render();
+</script>
+</body>
+</html>
