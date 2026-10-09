@@ -7,7 +7,7 @@ Biblioteca Viva · Escuela Primaria «Molino de Rosas» · Ciclo 2026-2027
 Cada alumno arma su reporte a su manera: pega las tiras donde termina, dibuja, dicta o copia encabezados. Una sola calificación mezclaría tres preguntas distintas, así que aquí se separan:
 
 1. **¿Lo entregó y cuándo?** Control de entregas, calculado solo con la fecha de recepción y las fechas de la ronda.
-2. **¿Están los apartados que pide su formato?** Completitud: cada apartado se marca Falta (0), Parcial (1) o Completo (2), y se obtiene un porcentaje.
+2. **¿Están los apartados que pide su guía?** Completitud: cada apartado se marca Falta (0), Parcial (1) o Completo (2), y se obtiene un porcentaje. En la Ronda 1 se usan los apartados de la guía personalizada de cada alumno; en las demás rondas, los del formato de cuaderno de su grado (más abajo).
 3. **¿Qué tan bien muestra que entendió el libro?** Cinco dimensiones con cuatro niveles. Siguen la escalera que ya pide el formato de cuaderno: recuperar lo que dice el texto, contarlo con sus palabras, leer entre líneas con una pista y opinar con razones.
 
 La quinta dimensión, **Lo hace suyo**, existe porque los reportes son personales: un dibujo que explica, una conexión con su videojuego favorito o una carta al personaje dicen mucho de cómo se está apropiando de la lectura.
