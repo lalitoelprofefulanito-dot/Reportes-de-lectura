@@ -117,6 +117,9 @@ th{color:var(--muted);font-weight:600;font-size:.8rem}
 .ruta figure.actual img{outline:3px solid var(--accent);outline-offset:1px}
 .ruta img{width:66px;height:88px;object-fit:cover;border-radius:4px;border:1px solid var(--line)}
 .ind{display:block;color:var(--muted);font-size:.8rem}
+.exportbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px;padding:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);font-size:.86rem}
+.exportsep{width:1px;align-self:stretch;background:var(--line);margin:0 6px}
+button.btn:disabled{opacity:.45;cursor:not-allowed}
 #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:.87rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
 #toast.show{opacity:1}
 @media (max-width:600px){main{padding:12px}section.card{padding:12px}}
@@ -287,7 +290,7 @@ const gradoDe = grupo => parseInt(grupo,10);
 const uid = ()=> Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
 function aviso(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(aviso._t); aviso._t=setTimeout(()=>t.classList.remove("show"),2800); }
 function descargar(nombre, contenido, tipo){
-  const blob = new Blob([contenido],{type:tipo});
+  const blob = contenido instanceof Blob ? contenido : new Blob([contenido],{type:tipo});
   const a = document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=nombre;
   document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500);
 }
@@ -624,7 +627,7 @@ function vistaCriterios(){
 }
 
 function vistaDatos(){
-  return tarjetaGitHub() + `<section class="card"><h2>Datos sin nombres para trabajar con 5.° y 6.°</h2>
+  return tarjetaInforme() + tarjetaGitHub() + `<section class="card"><h2>Datos sin nombres para trabajar con 5.° y 6.°</h2>
   <p>Estos archivos no llevan nombres, número de lista, fechas exactas ni observaciones. El orden de las filas se revuelve en cada descarga y cada fila recibe un código al azar distinto cada vez.</p>
   <div class="row"><fieldset style="border:1px solid var(--line);border-radius:8px"><legend class="muted" style="font-size:.85rem">Grados que se incluyen</legend>
   <div class="row">${GRUPOS.map(g=>`<label style="flex-direction:row;gap:4px;color:var(--ink)"><input type="checkbox" class="gsel" value="${g}" checked>${g}</label>`).join("")}</div></fieldset>
@@ -950,6 +953,540 @@ function desconectarGitHub(){
 }
 
 /* ============================================================
+   EXPORTAR A PDF Y WORD
+   Cada vista arma un documento neutro (una lista de bloques: títulos, párrafos,
+   tablas, gráficas, portadas). Dos impresores lo convierten: PDF (jsPDF +
+   autotable) y Word .docx (librería docx). Las librerías viven en lib/ y solo se
+   cargan al exportar. Las gráficas se dibujan en canvas y se insertan como imagen.
+   ============================================================ */
+const LIBS = {pdf:["lib/jspdf.umd.min.js","lib/jspdf.plugin.autotable.min.js"], word:["lib/docx.umd.js"]};
+const cargasLib = new Map();
+function cargarScript(src){
+  if(!cargasLib.has(src)) cargasLib.set(src, new Promise((ok,mal)=>{
+    const s = document.createElement("script"); s.src = src; s.onload = ok;
+    s.onerror = ()=>{ cargasLib.delete(src); mal(new Error("No se pudo cargar "+src)); };
+    document.head.appendChild(s);
+  }));
+  return cargasLib.get(src);
+}
+async function cargarLibs(tipo){ for(const src of LIBS[tipo]) await cargarScript(src); }
+
+/* Colores de las gráficas. Estados: los mismos de la aplicación. Dimensiones: paleta
+   categórica validada (orden fijo D1…D5). Niveles: una sola tonalidad, de claro a oscuro. */
+const HEX_ESTADO = {a_tiempo:"#3f9a64", extemporaneo:"#e0a33a", fuera_plazo:"#cf5a4b", prorroga:"#8a6fc4", justificado:"#b9a6e3", pendiente:"#c3ccd5", no_entregado:"#eaa79c", no_aplica:"#e7dfd2"};
+const HEX_DIM = ["#0e8fa0","#c8553d","#d9982a","#6a4fa8","#3f9a64"];
+const HEX_NIVEL = ["#d5dadd","#c9e6e6","#86c3c2","#3f8f93","#1b5e66"];
+const HEX_MARCA = "#1b5e66";
+const rgbDe = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const esOscuro = h => { const [r,g,b] = rgbDe(h); return (0.299*r+0.587*g+0.114*b) < 150; };
+const claveEstado = texto => Object.keys(ESTADOS).find(k=>ESTADOS[k]===texto);
+const fechaHora = () => new Date().toLocaleString("es-MX", {dateStyle:"long", timeStyle:"short"});
+const slug = s => String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"");
+const prom = v => v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
+const fmt1 = v => v==null ? "—" : v.toFixed(1);
+const VALORACION = {0:"Falta", 1:"Parcial", 2:"Completo"};
+
+/* ---------- gráficas (canvas → PNG) ---------- */
+function grafica(spec){
+  const ESC = 2, W = 1000, der = 70, abajo = 30;
+  const varias = spec.series.length > 1;
+  const fila = spec.tipo==="agrupada" ? 18*spec.series.length + 16 : 36;
+  const cv = document.createElement("canvas"); const g = cv.getContext("2d");
+  g.font = "13px Arial";
+  /* El margen izquierdo se ajusta a la etiqueta más larga (máximo 400 px) para no cortar nombres. */
+  const izq = Math.min(400, Math.max(90, ...spec.categorias.map(c=>g.measureText(String(c)).width + 24)));
+  let filasLeyenda = 0;
+  if(varias){ let x = izq; filasLeyenda = 1; spec.series.forEach(s=>{ const w = g.measureText(s.nombre).width + 30; if(x + w > W - der){ x = izq; filasLeyenda++; } x += w; }); }
+  const arriba = varias ? 14 + filasLeyenda*22 : 12;
+  const H = arriba + fila*spec.categorias.length + abajo;
+  cv.width = W*ESC; cv.height = H*ESC; g.scale(ESC, ESC);
+  g.fillStyle = "#ffffff"; g.fillRect(0, 0, W, H);
+  g.font = "13px Arial"; g.textBaseline = "middle";
+  if(varias){
+    let x = izq, y = 18;
+    spec.series.forEach(s=>{ const w = g.measureText(s.nombre).width + 30; if(x + w > W - der){ x = izq; y += 22; }
+      g.fillStyle = s.color; g.fillRect(x, y-6, 12, 12); g.fillStyle = "#3a3f44"; g.textAlign = "left"; g.fillText(s.nombre, x+17, y); x += w; });
+  }
+  const ancho = W - izq - der;
+  const totales = spec.categorias.map((_,i)=>spec.tipo==="apilada" ? spec.series.reduce((a,s)=>a+(s.valores[i]||0),0) : Math.max(0,...spec.series.map(s=>s.valores[i]||0)));
+  const max = spec.max ?? Math.max(1, ...totales);
+  const fin = arriba + fila*spec.categorias.length;
+  g.strokeStyle = "#e6e2da"; g.lineWidth = 1; g.fillStyle = "#6b645a"; g.textAlign = "center";
+  for(let t=0; t<=4; t++){ const x = izq + ancho*t/4; g.beginPath(); g.moveTo(x, arriba-4); g.lineTo(x, fin); g.stroke();
+    const v = max*t/4; g.fillText((spec.decimales ? v.toFixed(spec.decimales) : Math.round(v)) + (spec.sufijo||""), x, fin + 15); }
+  const etiqueta = (txt, x, y, color) => { g.fillStyle = color; g.fillText(txt, x, y); };
+  spec.categorias.forEach((cat, i)=>{
+    const y0 = arriba + i*fila;
+    g.textAlign = "right"; let t = String(cat); while(g.measureText(t).width > izq-14 && t.length > 3) t = t.slice(0,-2);
+    if(t !== String(cat)) t = t.trimEnd() + "…";
+    etiqueta(t, izq-10, y0 + fila/2, "#1f2933");
+    if(spec.tipo==="apilada"){
+      let x = izq;
+      spec.series.forEach(s=>{ const v = s.valores[i]||0; if(!v) return; const w = ancho*v/max;
+        g.fillStyle = s.color; g.fillRect(x, y0+7, Math.max(w-2,1), fila-14);
+        if(w > 24){ g.textAlign = "center"; etiqueta(String(v), x + w/2, y0 + fila/2, esOscuro(s.color) ? "#ffffff" : "#1f2933"); }
+        x += w; });
+      g.textAlign = "left"; etiqueta(String(totales[i]), x + 6, y0 + fila/2, "#3a3f44");
+    } else {
+      spec.series.forEach((s,j)=>{
+        const v = s.valores[i]; const alto = spec.tipo==="agrupada" ? 14 : fila-14; const y = spec.tipo==="agrupada" ? y0 + 8 + j*18 : y0 + 7;
+        g.textAlign = "left";
+        if(v==null){ etiqueta("sin datos", izq + 4, y + alto/2, "#9a948a"); return; }
+        const w = ancho*v/max; g.fillStyle = s.color; g.fillRect(izq, y, Math.max(w,1), alto);
+        etiqueta((spec.decimales ? v.toFixed(spec.decimales) : String(v)) + (spec.sufijo||""), izq + w + 6, y + alto/2, "#3a3f44");
+      });
+      if(spec.tipo==="agrupada" && i < spec.categorias.length-1){ g.strokeStyle = "#efebe4"; g.beginPath(); g.moveTo(izq, y0+fila); g.lineTo(W-der, y0+fila); g.stroke(); }
+    }
+  });
+  /* PNG para Word; JPEG para el PDF, porque jsPDF guarda los PNG sin comprimir y el archivo crecería mucho. */
+  const url = cv.toDataURL("image/png");
+  return {url, jpg:cv.toDataURL("image/jpeg", 0.9), bytes:b64(url.split(",")[1]), w:W, h:H};
+}
+
+/* ---------- portadas ---------- */
+const cachePortadas = {};
+async function portadaDatos(folio){
+  if(!folio) return null;
+  if(!(folio in cachePortadas)){
+    try{ const r = await fetch(`portadas/${folio}.jpg`); if(!r.ok) throw new Error();
+      const bytes = new Uint8Array(await r.arrayBuffer()); cachePortadas[folio] = {bytes, url:"data:image/jpeg;base64,"+aB64(bytes)};
+    }catch(e){ cachePortadas[folio] = null; }
+  }
+  return cachePortadas[folio];
+}
+
+/* ---------- datos para los documentos ---------- */
+function estadisticasRonda(ronda){
+  return GRUPOS.map(g=>{
+    const alumnos = S.roster.filter(a=>a.grupo===g).sort((a,b)=>a.nl-b.nl);
+    const c = conteo(ronda, g);
+    const regs = alumnos.map(a=>registroDe(a.id, ronda.id)).filter(revisado);
+    const comp = regs.map(r=>completitud(r)).filter(v=>v!==null);
+    const dims = Object.fromEntries(DIMENSIONES.map(d=>{
+      if(!dimAplica(d, gradoDe(g))) return [d.id, null];
+      const v = regs.map(r=>r.dimensiones?.[d.id]).filter(Boolean); return [d.id, {n:v.length, prom:prom(v)}];
+    }));
+    return {g, alumnos, c, regs, comp, dims, entregados:c.a_tiempo+c.extemporaneo+c.fuera_plazo, esperados:alumnos.length-c.no_aplica};
+  }).filter(x=>x.alumnos.length);
+}
+const ordenEstados = Object.keys(ESTADOS);
+function bloquesEntregas(ronda, est){
+  const usados = ordenEstados.filter(k=>est.some(x=>x.c[k]));
+  return [
+    {t:"grafica", spec:{tipo:"apilada", categorias:est.map(x=>x.g), series:usados.map(k=>({nombre:ESTADOS[k], color:HEX_ESTADO[k], valores:est.map(x=>x.c[k])}))}},
+    {t:"tabla", cab:["Grupo", ...usados.map(k=>ESTADOS[k]), "Entregados", "Revisados"],
+     filas:est.map(x=>[x.g, ...usados.map(k=>x.c[k]), `${x.entregados} / ${x.esperados}`, `${x.regs.length} / ${x.entregados}`])}
+  ];
+}
+function bloquesCalidad(est){
+  const con = est.filter(x=>x.regs.length);
+  if(!con.length) return [{t:"p", x:"Todavía no hay reportes revisados en esta ronda.", tenue:true}];
+  return [
+    {t:"grafica", spec:{tipo:"agrupada", categorias:con.map(x=>x.g), max:4, decimales:1, series:DIMENSIONES.map((d,i)=>({nombre:`${d.id} · ${d.nombre}`, color:HEX_DIM[i], valores:con.map(x=>x.dims[d.id]?.prom ?? null)}))}},
+    {t:"tabla", cab:["Grupo", "Revisados", ...DIMENSIONES.map(d=>d.id), "Completitud media"],
+     filas:con.map(x=>[x.g, x.regs.length, ...DIMENSIONES.map(d=>x.dims[d.id]==null ? "no aplica" : x.dims[d.id].n ? `${fmt1(x.dims[d.id].prom)} (n=${x.dims[d.id].n})` : "—"), x.comp.length ? Math.round(prom(x.comp))+"%" : "—"])},
+    {t:"p", x:"Promedio de nivel de 1 (Inicio) a 4 (Va más allá), solo con reportes donde se valoró la dimensión. Describe los reportes de esta ronda, no a los alumnos.", tenue:true}
+  ];
+}
+
+/* Documento de la vista «Panel» */
+function docPanel(ronda){
+  const est = estadisticasRonda(ronda); const c = conteo(ronda);
+  const esperados = S.roster.length - c.no_aplica; const entregados = c.a_tiempo+c.extemporaneo+c.fuera_plazo;
+  const b = [];
+  if(tieneExtemporaneo(ronda) && ronda.extemporaneoUnico) b.push({t:"p", x:`Solo por esta ocasión se recibe entrega extemporánea hasta el ${fmtFecha(ronda.extemporaneo)}. A partir de la siguiente ronda no habrá fecha de extemporáneo.`});
+  b.push({t:"kv", filas:[["Reportes esperados", String(esperados)], ["Entregados", `${entregados} (${esperados?Math.round(100*entregados/esperados):0}%)`], ["A tiempo", String(c.a_tiempo)], ["Extemporáneos", String(c.extemporaneo)], ["Prórroga o justificado", String(c.prorroga+c.justificado)], ["Pendientes o no entregados", String(c.pendiente+c.no_entregado)]]});
+  b.push({t:"h2", x:"Entregas por grupo"}, ...bloquesEntregas(ronda, est));
+  b.push({t:"h2", x:"Calidad de los reportes revisados"}, ...bloquesCalidad(est));
+  const faltan = S.roster.filter(a=>porRecibir(a, ronda)).sort((a,b)=>GRUPOS.indexOf(a.grupo)-GRUPOS.indexOf(b.grupo)||a.nl-b.nl);
+  b.push({t:"h2", x:"Por recibir"});
+  b.push(faltan.length ? {t:"tabla", cab:["Grupo","N.L.","Alumno","Estado","Fecha límite"], estadoCol:3,
+    filas:faltan.map(a=>[a.grupo, a.nl, a.nombre, ESTADOS[estadoEntrega(a.id,ronda)], fmtFecha(limitesDe(a.id,ronda).limite)])} : {t:"p", x:"Nadie pendiente en esta ronda."});
+  return {titulo:`Panel de entregas · ${ronda.nombre}`, subtitulo:`Fecha límite ${fmtFecha(ronda.limite)} · generado el ${fechaHora()}`, archivo:`Panel_${ronda.id}_${hoy()}`, bloques:b};
+}
+
+/* Documento de la vista «Entregas por grupo» */
+function docGrupo(ronda, grupo){
+  const lista = S.roster.filter(a=>a.grupo===grupo).sort((a,b)=>a.nl-b.nl);
+  const est = estadisticasRonda(ronda).find(x=>x.g===grupo);
+  return {titulo:`Entregas de ${grupo} · ${ronda.nombre}`, subtitulo:`Fecha límite ${fmtFecha(ronda.limite)} · generado el ${fechaHora()}`, archivo:`Entregas_${slug(grupo)}_${ronda.id}_${hoy()}`, bloques:[
+    {t:"kv", filas:[["Alumnos", String(lista.length)], ["Entregados", `${est.entregados} / ${est.esperados}`], ["Revisados", String(est.regs.length)], ["Completitud media", est.comp.length ? Math.round(prom(est.comp))+"%" : "—"]]},
+    {t:"tabla", cab:["N.L.","Alumno","Libro de la ronda","Estado","Recibido","Completitud"], estadoCol:3, filas:lista.map(a=>{
+      const r = registroDe(a.id, ronda.id); const f = folioDe(a.id, ronda.id);
+      return [a.nl, a.nombre, f ? `${LIBROS[f]?.t||""} (${f})` : "Sin libro de ruta", ESTADOS[estadoEntrega(a.id,ronda)], r?.fechaRecepcion ? fmtFecha(r.fechaRecepcion) : "", r && revisado(r) ? (completitud(r)??"—")+"%" : ""]; })}
+  ]};
+}
+
+/* Bloques de un reporte (vista «Revisar» y fichas del informe completo) */
+function bloquesReporte(alumnoId, ronda, nivel){
+  const a = alumnoPorId(alumnoId); const e = estadoEntrega(alumnoId, ronda);
+  const h = nivel==="h1" ? "h1" : "h2", sub = nivel==="h1" ? "h2" : "h3";
+  const b = [{t:h, x:`${a.nombre} · ${a.grupo}`}];
+  if(e==="no_aplica") return [...b, {t:"p", x:`En la ${ronda.nombre} sigue con el libro de la ronda anterior; su reporte se revisa en esa ronda.`}];
+  const f = folioDe(alumnoId, ronda.id); const L = LIBROS[f]||{}; const P = perfilDe(alumnoId);
+  const G = P?.guia?.ronda===ronda.id ? P.guia : null; const r = registroDe(alumnoId, ronda.id) || obtenerRegistroVacio(alumnoId, ronda.id);
+  const Lim = limitesDe(alumnoId, ronda);
+  b.push({t:"ficha", folio:f, filas:[
+    ["Libro", r.libro?.titulo || L.t || "Sin libro de ruta"], ["Autor(a)", r.libro?.autor || L.a || "—"],
+    ["Folio y ubicación", [r.libro?.folio || f, L.an].filter(Boolean).join(" · ") || "—"],
+    ["Tipo de texto", G?.tipo ? `Texto ${G.tipo}` : "—"], ["Reporte n.º", r.numReporte || numReporteDe(alumnoId, ronda.id) || "—"],
+    ["Estado de entrega", ESTADOS[e]], ["Fecha de recepción", r.fechaRecepcion ? fmtFecha(r.fechaRecepcion) : "—"],
+    ["Fecha límite", fmtFecha(Lim.limite) + (Lim.propia ? " (marcada en su guía)" : "")],
+    ["Cómo se produjo", PRODUCCION[r.produccion] || "Sin dato"], ["Fotografías de origen", r.fotos || "—"]]});
+  if(P) b.push({t:sub, x:"Perfil lector"}, {t:"kv", filas:[["Lo que más le gusta", (P.intereses||[]).join(" · ")], ["Formato favorito", P.formato||"—"], ["Ya es lector cuando…", P.yaSoy||"—"]]});
+  const secs = seccionesDe(alumnoId, ronda.id); const comp = completitud(r);
+  b.push({t:sub, x:G ? "Apartados de su guía personalizada" : `Apartados del formato de ${gradoDe(a.grupo)}.°`},
+    {t:"tabla", cab:["#","Apartado","Lo que pide","Valoración"], filas:secs.map((s,i)=>[i===0?"":String(i), s.titulo, s.indicacion||"", VALORACION[r.secciones?.[i]] ?? "Sin marcar"])},
+    {t:"p", x:`Completitud: ${comp===null ? "sin valorar" : comp+"%"}.`});
+  b.push({t:sub, x:"Calidad: cinco dimensiones"}, {t:"tabla", cab:["Dimensión","Nivel","Lo que muestra el reporte"], filas:DIMENSIONES.map(d=>{
+    const grado = gradoDe(a.grupo);
+    if(!dimAplica(d, grado)) return [`${d.id} · ${d.nombre}`, "No aplica", `Su formato de ${grado}.° todavía no pide este paso.`];
+    const v = r.dimensiones?.[d.id]; return [`${d.id} · ${d.nombre}`, v ? `${v} · ${NIVELES[v-1]}` : "Sin evidencia", v ? descriptores(d, grado)[v-1] : "No se observa en este reporte."]; })});
+  if(G?.estilo?.length){
+    const idea = !r.estilo ? "Sin dato" : r.estilo==="ninguna" ? "Hizo el apartado normal" : (G.estilo[r.estilo]?.idea || "");
+    b.push({t:"kv", filas:[["Idea «a tu estilo»", idea]]});
+  }
+  b.push({t:"kv", filas:[
+    ["Decisiones propias", (r.personalizacion||[]).map(i=>PERSONALIZACION[i]).join(" · ") || "Ninguna marcada"],
+    ["Siguiente paso", (r.siguiente||[]).map(i=>SIGUIENTE[i]).join(" · ") || "Sin definir"],
+    ["Observación situacional", r.observacion || "—"]]});
+  return b;
+}
+function docReporte(alumnoId, ronda){
+  const a = alumnoPorId(alumnoId);
+  return {titulo:`Reporte de lectura · ${ronda.nombre}`, subtitulo:`Generado el ${fechaHora()}`, archivo:`Reporte_${slug(a.nombre)}_${ronda.id}_${hoy()}`, bloques:bloquesReporte(alumnoId, ronda, "h1")};
+}
+
+/* Convierte lo que se ve en pantalla (títulos, párrafos, listas y tablas de texto) en bloques. Se usa en «Criterios». */
+function bloquesDesdeDOM(raiz){
+  const b = [];
+  const recorrer = nodo => { for(const el of nodo.children){
+    if(el.closest(".noprint")) continue;
+    const tag = el.tagName;
+    if(tag==="H2") b.push({t:"h2", x:el.textContent.trim()});
+    else if(tag==="H3") b.push({t:"h3", x:el.textContent.trim()});
+    else if(tag==="P") b.push({t:"p", x:el.textContent.trim()});
+    else if(tag==="OL" || tag==="UL") [...el.children].forEach((li,i)=>b.push({t:"p", x:`${tag==="OL" ? (i+1)+"." : "•"} ${li.textContent.trim()}`}));
+    else if(tag==="TABLE"){ const cab = [...el.querySelectorAll("thead th")].map(th=>th.textContent.trim());
+      b.push({t:"tabla", cab:cab.length?cab:null, filas:[...el.querySelectorAll("tbody tr")].map(tr=>[...tr.children].map(td=>td.textContent.trim()))}); }
+    else recorrer(el);
+  }};
+  recorrer(raiz); return b;
+}
+const docCriterios = () => ({titulo:"Criterios para revisar reportes de lectura", subtitulo:"Biblioteca Viva · Ciclo 2026-2027", archivo:`Criterios_reportes_lectura_${hoy()}`, bloques:bloquesDesdeDOM($("#app"))});
+
+/* Documento de la vista «Rondas y lista» */
+const docRondas = () => ({titulo:"Rondas de entrega y lista de alumnos", subtitulo:`Generado el ${fechaHora()}`, archivo:`Rondas_y_lista_${hoy()}`, bloques:[
+  {t:"h2", x:"Rondas"},
+  {t:"tabla", cab:["Ronda","Inicio","Fecha límite","Extemporáneo hasta"], filas:S.rondas.map(r=>[r.nombre, fmtFecha(r.inicio), fmtFecha(r.limite), tieneExtemporaneo(r) ? fmtFecha(r.extemporaneo)+(r.extemporaneoUnico?" (única ocasión)":"") : "Sin extemporáneo"])},
+  {t:"h2", x:"Alumnos por grupo"},
+  {t:"tabla", cab:["Grupo","Alumnos"], filas:GRUPOS.map(g=>[g, String(S.roster.filter(a=>a.grupo===g).length)])}
+]});
+
+/* Informe completo: todas las rondas con reportes, concentrados, gráficas y la ficha de cada reporte */
+function docInforme(){
+  const conReporte = (a, ronda) => { const r = registroDe(a.id, ronda.id); return r && (r.fechaRecepcion || revisado(r)) && estadoEntrega(a.id, ronda)!=="no_aplica"; };
+  const rondas = S.rondas.filter(rd=>S.roster.some(a=>conReporte(a, rd)));
+  if(!rondas.length) return null;
+  const orden = (a,b)=>GRUPOS.indexOf(a.grupo)-GRUPOS.indexOf(b.grupo)||a.nl-b.nl;
+  const b = [{t:"p", x:"Documento interno: contiene nombres y observaciones de los alumnos. Para trabajar con los grupos use las exportaciones sin nombres."},
+    {t:"kv", filas:[["Rondas incluidas", rondas.map(r=>r.nombre).join(" · ")], ["Alumnos en lista", String(S.roster.length)], ["Reportes recibidos o revisados", String(rondas.reduce((n,rd)=>n+S.roster.filter(a=>conReporte(a,rd)).length,0))]]}];
+  rondas.forEach((ronda, k)=>{
+    const est = estadisticasRonda(ronda); const c = conteo(ronda);
+    const esperados = S.roster.length - c.no_aplica; const entregados = c.a_tiempo+c.extemporaneo+c.fuera_plazo;
+    const revisados = est.flatMap(x=>x.regs);
+    if(k>0) b.push({t:"salto"});
+    b.push({t:"h1", x:`${ronda.nombre} · ${fmtFecha(ronda.inicio)} al ${fmtFecha(ronda.limite)}`},
+      {t:"kv", filas:[["Reportes esperados", String(esperados)], ["Entregados", `${entregados} (${esperados?Math.round(100*entregados/esperados):0}%)`], ["A tiempo / extemporáneos / fuera de plazo", `${c.a_tiempo} / ${c.extemporaneo} / ${c.fuera_plazo}`], ["Prórroga o justificado", String(c.prorroga+c.justificado)], ["Revisados", String(revisados.length)]]},
+      {t:"h2", x:"1. Entregas por grupo"}, ...bloquesEntregas(ronda, est));
+    const conRev = est.filter(x=>x.comp.length);
+    b.push({t:"h2", x:"2. Completitud de los apartados"});
+    if(conRev.length) b.push(
+      {t:"grafica", spec:{tipo:"simple", categorias:conRev.map(x=>x.g), max:100, sufijo:"%", series:[{nombre:"Completitud media", color:HEX_MARCA, valores:conRev.map(x=>Math.round(prom(x.comp)))}]}},
+      {t:"tabla", cab:["Grupo","Reportes revisados","Completitud media","Mínima","Máxima"], filas:conRev.map(x=>[x.g, x.comp.length, Math.round(prom(x.comp))+"%", Math.min(...x.comp)+"%", Math.max(...x.comp)+"%"])},
+      {t:"p", x:"Completo vale 2, parcial 1 y falta 0; el porcentaje es lo logrado sobre el total posible de los apartados de su guía.", tenue:true});
+    else b.push({t:"p", x:"Todavía no hay reportes revisados.", tenue:true});
+    b.push({t:"h2", x:"3. Calidad por dimensión y grupo"}, ...bloquesCalidad(est));
+    if(revisados.length){
+      const distrib = DIMENSIONES.map(d=>{ const n=[0,0,0,0,0]; est.forEach(x=>{ if(!dimAplica(d, gradoDe(x.g))) return; x.regs.forEach(r=>n[r.dimensiones?.[d.id]||0]++); }); return n; });
+      b.push({t:"h2", x:"4. Distribución de niveles en cada dimensión"},
+        {t:"grafica", spec:{tipo:"apilada", categorias:DIMENSIONES.map(d=>`${d.id} · ${d.nombre}`), series:["Sin evidencia",...NIVELES].map((nom,i)=>({nombre:nom, color:HEX_NIVEL[i], valores:distrib.map(n=>n[i])}))}},
+        {t:"tabla", cab:["Dimensión","Sin evidencia",...NIVELES], filas:DIMENSIONES.map((d,j)=>[`${d.id} · ${d.nombre}`, ...distrib[j]])},
+        {t:"p", x:"Cuenta reportes revisados de los grados donde la dimensión aplica (D3 no aplica en 1.° y 2.°).", tenue:true});
+      const frec = (lista, campo) => lista.map((t,i)=>[t, revisados.filter(r=>(r[campo]||[]).includes(i)).length]);
+      const dec = frec(PERSONALIZACION, "personalizacion"), sig = frec(SIGUIENTE, "siguiente");
+      b.push({t:"h2", x:"5. Decisiones propias en los reportes"},
+        {t:"grafica", spec:{tipo:"simple", categorias:dec.map(x=>x[0]), series:[{nombre:"Reportes", color:HEX_DIM[0], valores:dec.map(x=>x[1])}]}},
+        {t:"tabla", cab:["Decisión","Reportes","% de los revisados"], filas:dec.map(([t,n])=>[t, n, Math.round(100*n/revisados.length)+"%"])});
+      b.push({t:"h2", x:"6. Siguiente paso de acompañamiento"},
+        {t:"tabla", cab:["Siguiente paso","Reportes"], filas:sig.filter(x=>x[1]).map(([t,n])=>[t, n])});
+      const recibidos = est.flatMap(x=>x.alumnos.map(a=>registroDe(a.id, ronda.id)).filter(r=>r && r.fechaRecepcion));
+      b.push({t:"h2", x:"7. Cómo se produjeron y uso de «Hazlo a tu estilo»"},
+        {t:"tabla", cab:["Grupo", ...Object.values(PRODUCCION), "Sin dato", "Eligió idea a su estilo", "Apartado normal"], filas:est.map(x=>{
+          const rs = x.alumnos.map(a=>registroDe(a.id, ronda.id)).filter(r=>r && r.fechaRecepcion);
+          return [x.g, ...Object.keys(PRODUCCION).map(p=>rs.filter(r=>r.produccion===p).length), rs.filter(r=>!r.produccion).length, rs.filter(r=>r.estilo && r.estilo!=="ninguna").length, rs.filter(r=>r.estilo==="ninguna").length]; })},
+        {t:"p", x:`Reportes recibidos en la ronda: ${recibidos.length}.`, tenue:true});
+    }
+    const alumnosRonda = S.roster.slice().sort(orden).filter(a=>estadoEntrega(a.id, ronda)!=="no_aplica");
+    b.push({t:"h2", x:"8. Concentrado por alumno"},
+      {t:"tabla", chica:true, estadoCol:2, cab:["Grupo · N.L.","Alumno","Estado","Recibido","Compl.",...DIMENSIONES.map(d=>d.id)], filas:alumnosRonda.filter(a=>conReporte(a, ronda)).map(a=>{
+        const r = registroDe(a.id, ronda.id); const g = gradoDe(a.grupo); const comp = completitud(r);
+        return [`${a.grupo} · ${a.nl}`, a.nombre, ESTADOS[estadoEntrega(a.id,ronda)], r.fechaRecepcion ? fmtFecha(r.fechaRecepcion) : "", comp===null ? "—" : comp+"%", ...DIMENSIONES.map(d=>!dimAplica(d,g) ? "n/a" : r.dimensiones?.[d.id] || "—")]; })});
+    const sin = alumnosRonda.filter(a=>!conReporte(a, ronda));
+    b.push({t:"h2", x:"9. Sin reporte recibido"});
+    b.push(sin.length ? {t:"tabla", chica:true, estadoCol:3, cab:["Grupo","N.L.","Alumno","Estado","Fecha límite"], filas:sin.map(a=>[a.grupo, a.nl, a.nombre, ESTADOS[estadoEntrega(a.id,ronda)], fmtFecha(limitesDe(a.id,ronda).limite)])} : {t:"p", x:"Todos entregaron."});
+    b.push({t:"salto"}, {t:"h1", x:`Fichas de los reportes · ${ronda.nombre}`});
+    S.roster.slice().sort(orden).filter(a=>conReporte(a, ronda)).forEach((a,i)=>{ if(i>0) b.push({t:"salto"}); b.push(...bloquesReporte(a.id, ronda, "h2")); });
+  });
+  return {titulo:"Informe de reportes de lectura", subtitulo:`Biblioteca Viva · Escuela Primaria «Molino de Rosas» · generado el ${fechaHora()}`, archivo:`Informe_completo_reportes_lectura_${hoy()}`, bloques:b};
+}
+
+/* ---------- maquetación común ----------
+   Hoja carta con márgenes estrechos (1.27 cm = 36 pt). Las tablas ocupan todo el ancho.
+   Cada sección (lo que va entre dos saltos de página) se mide antes de imprimirse:
+   si su última página queda con un «cachito» (menos del 30 % de la hoja), se reduce
+   la escala de letra y espacios, hasta un 76 %, para que quepa en una página menos.
+   Los títulos no quedan solos al pie de página y las tablas cortas no se parten. */
+const PAGINA = {W:612, H:792, izq:36, der:36, arriba:44, abajo:40};
+const TAM = {titulo:19, subtitulo:9.5, h1:15, h2:12.5, h3:10.5, p:9.5, tenue:8.2, tabla:8.5, chica:7.5, pad:3.2, padChica:2.2, portadaW:84, portadaH:112};
+const ESCALAS = [1, 0.95, 0.9, 0.85, 0.8, 0.76];
+const CACHITO = 0.3;
+const HOLGURA_WORD = 1.06;
+const cacheGraficas = new WeakMap();
+const graficaDe = spec => { if(!cacheGraficas.has(spec)) cacheGraficas.set(spec, grafica(spec)); return cacheGraficas.get(spec); };
+const txtPDF = s => String(s ?? "").replace(/[‘’]/g,"'").replace(/[“”]/g,'"')
+  .replace(/[^\u0000-ÿ–—…•€]/gu,"").replace(/[ \t]{2,}/g," ").trim();
+const nuevoPDF = alto => new window.jspdf.jsPDF({unit:"pt", format: alto ? [PAGINA.W, alto] : "letter"});
+/* Título y subtítulo van como bloques de la primera sección; los saltos separan secciones. */
+function secciones(doc){
+  const todas = [[{t:"titulo", x:doc.titulo}, ...(doc.subtitulo ? [{t:"subtitulo", x:doc.subtitulo}] : [])]];
+  doc.bloques.forEach(b=>{ if(b.t==="salto") todas.push([]); else todas[todas.length-1].push(b); });
+  return todas.filter(s=>s.length);
+}
+/* Anchos de columna comunes a PDF y Word (en puntos). Las columnas de texto corto (fechas, estados,
+   números) reciben lo que necesitan para no partirse; el resto se reparte entre las de texto largo. */
+const padTabla = (b, s) => (b.chica ? TAM.padChica : TAM.pad)*s;
+function anchosTabla(b, s, ancho){
+  const n = (b.cab || b.filas[0] || []).length; if(!n) return [];
+  if(b.kv) return [ancho*0.32, ancho*0.68];
+  const porLetra = (b.chica ? TAM.chica : TAM.tabla)*s*0.53, relleno = padTabla(b, s)*3 + 4;
+  const cols = [...Array(n)].map((_,j)=>{
+    const textos = b.filas.map(f=>String(f[j] ?? "")); const largo = Math.max(0, ...textos.map(t=>t.length));
+    const minCab = Math.max(0, ...String(b.cab?.[j] ?? "").split(/\s+/).map(w=>w.length))*porLetra*1.12 + relleno;
+    if(largo <= 22) return {fijo:true, min:Math.max(minCab, largo*porLetra + relleno)};
+    return {fijo:false, min:Math.max(minCab, 16*porLetra + relleno), peso:textos.reduce((a,t)=>a+t.length,0)/textos.length};
+  });
+  let anchos = cols.map(c=>c.min); const suma = anchos.reduce((a,c)=>a+c,0);
+  if(suma >= ancho) return anchos.map(w=>w*ancho/suma);
+  const flex = cols.filter(c=>!c.fijo); const resto = ancho - suma;
+  if(!flex.length) return anchos.map(w=>w*ancho/suma);
+  const pt = flex.reduce((a,c)=>a+c.peso,0);
+  return cols.map((c,j)=>c.fijo ? anchos[j] : anchos[j] + resto*c.peso/pt);
+}
+const precargarPortadas = doc => Promise.all(doc.bloques.filter(b=>b.t==="ficha").map(b=>portadaDatos(b.folio)));
+
+function crearMaquetador(pdf, s, holgura=1){
+  const {W, H, izq, der, arriba, abajo} = PAGINA; const ancho = W - izq - der; const util = (H - arriba - abajo)/holgura;
+  const marca = rgbDe(HEX_MARCA), tinta = [31,41,51], tenue = [107,100,90];
+  const st = {y:arriba};
+  const libre = () => arriba + util - st.y;
+  const nuevaPagina = () => { pdf.addPage(); st.y = arriba; };
+  const ESTILO = {titulo:[TAM.titulo,"bold",marca,0,2], subtitulo:[TAM.subtitulo,"normal",tenue,0,10], h1:[TAM.h1,"bold",marca,8,5], h2:[TAM.h2,"bold",marca,7,4], h3:[TAM.h3,"bold",tinta,5,3]};
+  const estiloDe = b => b.t==="p" ? (b.tenue ? [TAM.tenue,"normal",tenue,0,5] : [TAM.p,"normal",tinta,0,5]) : ESTILO[b.t];
+  const lineas = (txt, tam, est) => { pdf.setFont("helvetica", est); pdf.setFontSize(tam); return pdf.splitTextToSize(txtPDF(txt), ancho); };
+  const altoTexto = b => { const [tam, est, , antes, despues] = estiloDe(b); return (antes + despues)*s + lineas(b.x, tam*s, est).length*tam*s*1.22; };
+  const opcionesTabla = (b, sangria=0) => ({
+    head: b.cab ? [b.cab.map(txtPDF)] : undefined, body: b.filas.map(f=>f.map(c=>txtPDF(c))),
+    margin:{left:izq + sangria, right:der, top:arriba, bottom:abajo}, tableWidth:ancho - sangria, rowPageBreak:"avoid",
+    styles:{font:"helvetica", fontSize:(b.chica ? TAM.chica : TAM.tabla)*s, cellPadding:{top:padTabla(b,s), bottom:padTabla(b,s), left:padTabla(b,s)*1.5, right:padTabla(b,s)*1.5}, textColor:tinta, lineColor:[231,223,210], lineWidth:0.5, overflow:"linebreak", valign:"middle"},
+    headStyles:{fillColor:marca, textColor:255, fontStyle:"bold"}, alternateRowStyles:{fillColor:[248,246,242]},
+    columnStyles: Object.fromEntries(anchosTabla(b, s, ancho - sangria).map((w,j)=>[j, b.kv && j===0 ? {cellWidth:w, fontStyle:"bold", fillColor:[220,235,232]} : {cellWidth:w}])),
+    didParseCell: d=>{ if(d.section==="body" && b.estadoCol===d.column.index){ const k = claveEstado(d.cell.raw); if(k){ d.cell.styles.fillColor = rgbDe(HEX_ESTADO[k]); d.cell.styles.textColor = esOscuro(HEX_ESTADO[k]) ? 255 : tinta; } } }
+  });
+  const altoTabla = (b, sangria=0) => { const tmp = nuevoPDF(14000); tmp.autoTable({...opcionesTabla(b, sangria), startY:0, margin:{left:izq + sangria, right:der, top:0, bottom:0}}); return tmp.lastAutoTable.finalY + 8*s; };
+  const medidaGrafica = b => { const img = graficaDe(b.spec); const w = ancho*s; return {img, w, h:w*img.h/img.w}; };
+  const kv = filas => ({filas, kv:true});
+  function alto(b){
+    if(!b) return 0;
+    if(ESTILO[b.t] || b.t==="p") return altoTexto(b);
+    if(b.t==="kv") return altoTabla(kv(b.filas));
+    if(b.t==="tabla") return altoTabla(b);
+    if(b.t==="grafica") return medidaGrafica(b).h + 8*s;
+    if(b.t==="ficha"){ const p = cachePortadas[b.folio]; return p ? Math.max(TAM.portadaH*s + 10*s, altoTabla(kv(b.filas), (TAM.portadaW + 12)*s)) : altoTabla(kv(b.filas)); }
+    return 0;
+  }
+  /* Si el bloque cabe en una hoja pero no en lo que queda de esta, empieza en la siguiente. */
+  const reservar = h => { if(h > libre() && h <= util && st.y > arriba) nuevaPagina(); };
+  /* Tablas: las cortas (hasta un tercio de hoja) se mueven completas; las largas empiezan aquí si caben
+     al menos el encabezado y un par de filas, y se parten entre filas. */
+  const MIN_TABLA = 70;
+  const reservarTabla = h => { if(h <= util*0.35) reservar(h); else if(libre() < MIN_TABLA && st.y > arriba) nuevaPagina(); };
+  const altoInicial = b => { const h = alto(b); return b && b.t==="tabla" && h > util*0.35 ? MIN_TABLA : h; };
+  function texto(b){
+    const [tam, est, color, antes, despues] = estiloDe(b);
+    const ls = lineas(b.x, tam*s, est); pdf.setTextColor(...color);
+    st.y += antes*s;
+    ls.forEach(l=>{ if(tam*s*1.22 > libre()) nuevaPagina(); pdf.text(l, izq, st.y + tam*s*0.9); st.y += tam*s*1.22; });
+    st.y += despues*s;
+  }
+  function tabla(b, sangria=0){ pdf.autoTable({...opcionesTabla(b, sangria), startY:st.y}); st.y = pdf.lastAutoTable.finalY + 8*s; }
+  function dibujar(b, siguiente){
+    if(ESTILO[b.t]){
+      /* Un título se queda con el inicio de lo que sigue (hasta media hoja). */
+      if(b.t!=="titulo" && b.t!=="subtitulo") reservar(altoTexto(b) + Math.min(altoInicial(siguiente), util*0.5));
+      texto(b);
+    }
+    else if(b.t==="p"){ reservar(altoTexto(b)); texto(b); }
+    else if(b.t==="kv" || b.t==="tabla"){ const t = b.t==="kv" ? kv(b.filas) : b; reservarTabla(altoTabla(t)); tabla(t); }
+    else if(b.t==="grafica"){ const {img, w, h} = medidaGrafica(b); reservar(h + 8*s); pdf.addImage(img.jpg, "JPEG", izq + (ancho - w)/2, st.y, w, h); st.y += h + 8*s; }
+    else if(b.t==="ficha"){
+      const p = cachePortadas[b.folio]; reservar(alto(b));
+      if(p){ const y0 = st.y, pw = TAM.portadaW*s, ph = TAM.portadaH*s; pdf.addImage(p.url, "JPEG", izq, y0, pw, ph); tabla(kv(b.filas), pw + 12*s); st.y = Math.max(st.y, y0 + ph + 10*s); }
+      else tabla(kv(b.filas));
+    }
+  }
+  return {
+    seccion(bloques){ bloques.forEach((b,i)=>dibujar(b, bloques[i+1])); },
+    relleno: () => (st.y - arriba)/util
+  };
+}
+/* holgura > 1 simula una hoja más corta: se usa para Word, donde filas y renglones miden algo más que en el PDF. */
+function escalaSeccion(bloques, holgura=1){
+  const medir = s => { const tmp = nuevoPDF(); const m = crearMaquetador(tmp, s, holgura); m.seccion(bloques); return {n:tmp.internal.getNumberOfPages(), relleno:m.relleno()}; };
+  const base = medir(1);
+  if(base.n===1 || base.relleno >= CACHITO) return 1;
+  for(const s of ESCALAS.slice(1)) if(medir(s).n < base.n) return s;
+  return 1;
+}
+
+/* ---------- impresor PDF ---------- */
+async function aPDF(doc){
+  await cargarLibs("pdf"); await precargarPortadas(doc);
+  const pdf = nuevoPDF();
+  secciones(doc).forEach((sec, i)=>{ if(i>0) pdf.addPage(); crearMaquetador(pdf, escalaSeccion(sec)).seccion(sec); });
+  const {W, H, izq, der} = PAGINA; const total = pdf.internal.getNumberOfPages();
+  for(let i=1; i<=total; i++){
+    pdf.setPage(i); pdf.setFont("helvetica","normal"); pdf.setFontSize(7.5); pdf.setTextColor(107,100,90);
+    pdf.text(txtPDF("Reportes de Lectura · Biblioteca Viva · Molino de Rosas · Documento interno"), izq, 26);
+    pdf.text(`Página ${i} de ${total}`, W - der, H - 18, {align:"right"});
+  }
+  descargar(doc.archivo + ".pdf", pdf.output("blob"), "application/pdf");
+}
+
+/* ---------- impresor Word (.docx) ----------
+   Usa la misma escala por sección que calcula el PDF (Arial y Helvetica miden casi igual),
+   márgenes estrechos, tablas de ancho fijo a toda la página con los mismos anchos de columna que el PDF,
+   y filas que no se parten. */
+async function aWord(doc){
+  await cargarLibs("pdf"); await cargarLibs("word"); await precargarPortadas(doc);
+  const D = window.docx;
+  const ANCHO = 12240 - 2*720;                        /* ancho útil en twips: carta menos márgenes de 0.5" */
+  const ANCHO_PX = 720;                               /* el mismo ancho en píxeles (96 por pulgada) */
+  const corrida = (t, o={}) => new D.TextRun({text:String(t ?? ""), ...o});
+  const medio = pt => Math.max(10, Math.round(pt*2));  /* tamaño de letra en medios puntos */
+  /* Espacio después de una tabla: renglón de alto exacto, igual al hueco que deja el PDF. */
+  const separadores = new Set();
+  const separador = pt => { const p = new D.Paragraph({spacing:{before:0, after:0, line:Math.max(20, Math.round(pt*20)), lineRule:D.LineRuleType.EXACT}, children:[corrida("", {size:2})]}); separadores.add(p); return p; };
+  function tabla(b, s, anchoTotal=ANCHO){
+    const tam = medio((b.chica ? TAM.chica : TAM.tabla)*s), pad = Math.round(padTabla(b, s)*20);
+    const anchos = anchosTabla(b, s, anchoTotal/20).map(w=>Math.round(w*20)); anchos[anchos.length-1] += anchoTotal - anchos.reduce((a,c)=>a+c,0);
+    const fila = (celdas, enc) => {
+      return new D.TableRow({tableHeader:enc, cantSplit:true, children:celdas.map((c,j)=>{
+        const est = !enc && b.estadoCol===j ? claveEstado(c) : null;
+        const fondo = enc ? HEX_MARCA : (b.kv && j===0) ? "#dcebe8" : est ? HEX_ESTADO[est] : null;
+        return new D.TableCell({width:{size:anchos[j], type:D.WidthType.DXA}, margins:{top:pad, bottom:pad, left:Math.round(pad*1.5), right:Math.round(pad*1.5)}, verticalAlign:D.VerticalAlign.CENTER,
+          shading: fondo ? {fill:fondo.slice(1), type:D.ShadingType.CLEAR, color:"auto"} : undefined,
+          children:[new D.Paragraph({spacing:{before:0, after:0}, children:[corrida(c, {size:tam, bold:enc || (b.kv && j===0), color: enc || (est && esOscuro(HEX_ESTADO[est])) ? "FFFFFF" : undefined})]})]}); })}); };
+    const filas = []; if(b.cab) filas.push(fila(b.cab, true)); b.filas.forEach(f=>filas.push(fila(f, false)));
+    return [new D.Table({width:{size:anchoTotal, type:D.WidthType.DXA}, columnWidths:anchos, layout:D.TableLayoutType.FIXED, rows:filas}),
+            separador(8*s)];
+  }
+  const hijos = [];
+  secciones(doc).forEach((sec, i)=>{
+    const s = escalaSeccion(sec, HOLGURA_WORD); let salto = i>0;
+    const conSalto = p => { if(salto){ salto = false; return {...p, pageBreakBefore:true}; } return p; };
+    const vacioConSalto = () => { if(salto) hijos.push(new D.Paragraph(conSalto({spacing:{before:0, after:0}, children:[]}))); };
+    const inicio = hijos.length;
+    sec.forEach(b=>{
+      if(b.t==="titulo") hijos.push(new D.Paragraph(conSalto({spacing:{after:Math.round(40*s)}, children:[corrida(b.x, {bold:true, color:HEX_MARCA.slice(1), size:medio(TAM.titulo*s)})]})));
+      else if(b.t==="subtitulo") hijos.push(new D.Paragraph(conSalto({spacing:{after:Math.round(200*s)}, children:[corrida(b.x, {color:"6B645A", size:medio(TAM.subtitulo*s)})]})));
+      else if(b.t==="h1"||b.t==="h2"||b.t==="h3"){
+        const [tam, color] = {h1:[TAM.h1, HEX_MARCA], h2:[TAM.h2, HEX_MARCA], h3:[TAM.h3, "#1F2933"]}[b.t];
+        hijos.push(new D.Paragraph(conSalto({keepNext:true, keepLines:true, spacing:{before:Math.round(160*s), after:Math.round(80*s)}, outlineLevel:{h1:0,h2:1,h3:2}[b.t],
+          children:[corrida(b.x, {bold:true, color:color.slice(1), size:medio(tam*s)})]})));
+      }
+      else if(b.t==="p") hijos.push(new D.Paragraph(conSalto({keepLines:true, spacing:{after:Math.round(100*s)}, children:[corrida(b.x, {color:b.tenue?"6B645A":undefined, size:medio((b.tenue?TAM.tenue:TAM.p)*s)})]})));
+      else if(b.t==="kv"){ vacioConSalto(); hijos.push(...tabla({filas:b.filas, kv:true}, s)); }
+      else if(b.t==="tabla"){ vacioConSalto(); hijos.push(...tabla(b, s)); }
+      else if(b.t==="grafica"){ const img = graficaDe(b.spec); const w = Math.round(ANCHO_PX*s);
+        hijos.push(new D.Paragraph(conSalto({keepNext:true, alignment:D.AlignmentType.CENTER, spacing:{after:Math.round(100*s)}, children:[new D.ImageRun({data:img.bytes, transformation:{width:w, height:Math.round(w*img.h/img.w)}})]}))); }
+      else if(b.t==="ficha"){ const p = cachePortadas[b.folio]; vacioConSalto();
+        if(!p){ hijos.push(...tabla({filas:b.filas, kv:true}, s)); return; }
+        /* Portada a la izquierda y datos a la derecha, como en el PDF, dentro de una tabla sin bordes. */
+        const izqW = Math.round((TAM.portadaW + 12)*s*20), derW = ANCHO - izqW; const sinBorde = {style:D.BorderStyle.NONE, size:0, color:"FFFFFF"};
+        const bordes = {top:sinBorde, bottom:sinBorde, left:sinBorde, right:sinBorde};
+        const [interna, espacio] = tabla({filas:b.filas, kv:true}, s, derW);
+        hijos.push(new D.Table({width:{size:ANCHO, type:D.WidthType.DXA}, columnWidths:[izqW, derW], layout:D.TableLayoutType.FIXED,
+          borders:{...bordes, insideHorizontal:sinBorde, insideVertical:sinBorde},
+          rows:[new D.TableRow({cantSplit:true, children:[
+            new D.TableCell({width:{size:izqW, type:D.WidthType.DXA}, borders:bordes, margins:{top:0, bottom:0, left:0, right:0},
+              children:[new D.Paragraph({children:[new D.ImageRun({data:p.bytes, transformation:{width:Math.round(TAM.portadaW*s*1.333), height:Math.round(TAM.portadaH*s*1.333)}})]})]}),
+            new D.TableCell({width:{size:derW, type:D.WidthType.DXA}, borders:bordes, margins:{top:0, bottom:0, left:0, right:0}, children:[interna, separador(1)]})]})]}), espacio); }
+    });
+    /* El espacio tras la última tabla de la sección se reduce a 1 pt para que no abra una hoja en blanco. */
+    if(hijos.length > inicio && separadores.has(hijos[hijos.length-1])) hijos[hijos.length-1] = separador(1);
+  });
+  const documento = new D.Document({
+    creator:"Reportes de Lectura · Biblioteca Viva", title:doc.titulo,
+    styles:{default:{document:{run:{font:"Arial", size:medio(TAM.p)}}}},
+    sections:[{properties:{page:{size:{width:12240, height:15840}, margin:{top:720, bottom:720, left:720, right:720, header:400, footer:400}}},
+      headers:{default:new D.Header({children:[new D.Paragraph({children:[corrida("Reportes de Lectura · Biblioteca Viva · Molino de Rosas · Documento interno", {size:15, color:"6B645A"})]})]})},
+      footers:{default:new D.Footer({children:[new D.Paragraph({alignment:D.AlignmentType.RIGHT, children:[new D.TextRun({size:15, color:"6B645A", children:["Página ", D.PageNumber.CURRENT, " de ", D.PageNumber.TOTAL_PAGES]})]})]})},
+      children:hijos}]});
+  descargar(doc.archivo + ".docx", await D.Packer.toBlob(documento), "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+}
+
+/* ---------- botones ---------- */
+const DOCS_VISTA = {
+  panel: () => docPanel(rondaSel()),
+  grupos: () => docGrupo(rondaSel(), filtroGrupo),
+  registrar: () => edicion?.alumnoId ? docReporte(edicion.alumnoId, rondaSel()) : null,
+  criterios: docCriterios,
+  config: docRondas
+};
+let exportando = false;
+async function exportarDoc(armar, formato){
+  if(exportando) return;
+  const doc = armar(); if(!doc) return aviso("No hay nada que exportar todavía en esta vista");
+  exportando = true; aviso(formato==="pdf" ? "Preparando el PDF…" : "Preparando el documento de Word…");
+  try{ await (formato==="pdf" ? aPDF(doc) : aWord(doc)); aviso("Listo: revise la carpeta de descargas"); }
+  catch(e){ console.error(e); aviso("No se pudo exportar: " + e.message); }
+  finally{ exportando = false; }
+}
+const exportarVista = formato => exportarDoc(DOCS_VISTA[vista], formato);
+function exportarInforme(formato){
+  if(necesitaDesbloqueo()) return aviso("Primero abra las listas con la contraseña");
+  exportarDoc(()=>{ const d = docInforme(); if(!d) aviso("Aún no hay reportes recibidos para el informe"); return d; }, formato);
+}
+function barraExportar(){
+  if(!DOCS_VISTA[vista] || (vista!=="criterios" && necesitaDesbloqueo())) return "";
+  const sinAlumno = vista==="registrar" && !edicion?.alumnoId;
+  const dis = sinAlumno ? ` disabled title="Elija primero un alumno"` : "";
+  return `<div class="exportbar noprint" role="toolbar" aria-label="Exportar">
+    <span class="muted">Exportar esta vista:</span>
+    <button class="btn small sec" onclick="exportarVista('pdf')"${dis}>PDF</button>
+    <button class="btn small sec" onclick="exportarVista('word')"${dis}>Word</button>
+    ${vista==="panel" ? `<span class="exportsep" aria-hidden="true"></span><span class="muted">Informe completo con gráficas:</span>
+    <button class="btn small" onclick="exportarInforme('pdf')">PDF</button>
+    <button class="btn small" onclick="exportarInforme('word')">Word</button>` : ""}
+  </div>`;
+}
+const tarjetaInforme = () => `<section class="card"><h2>Informe completo de todos los reportes</h2>
+  <p>Reúne todas las rondas con reportes: entregas, completitud, niveles por dimensión, decisiones propias, siguientes pasos, un concentrado por alumno, la lista de quienes no han entregado y la ficha de cada reporte con su portada. Lleva gráficas y tablas.</p>
+  <div class="row"><button class="btn" onclick="exportarInforme('pdf')">Descargar informe en PDF</button><button class="btn sec" onclick="exportarInforme('word')">Descargar informe en Word</button></div>
+  <p class="muted" style="font-size:.84rem">Es un documento interno: contiene nombres y observaciones. Para los grupos de 5.° y 6.° use las tablas sin nombres de abajo.</p></section>`;
+
+/* ============================================================
    NAVEGACIÓN
    ============================================================ */
 const VISTAS = {panel:vistaPanel, grupos:vistaGrupos, registrar:vistaRegistrar, criterios:vistaCriterios, datos:vistaDatos, config:vistaConfig};
@@ -957,7 +1494,7 @@ function ir(v){ vista=v; render(); window.scrollTo(0,0); }
 function render(){
   const y = window.scrollY;
   document.querySelectorAll("#nav button").forEach(b=> b.dataset.view===vista ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current"));
-  $("#app").innerHTML = VISTAS[vista]();
+  $("#app").innerHTML = barraExportar() + VISTAS[vista]();
   window.scrollTo(0,y);
 }
 $("#nav").addEventListener("click", e=>{ const b=e.target.closest("button[data-view]"); if(b){ if(b.dataset.view!=="registrar") edicion=null; ir(b.dataset.view); } });

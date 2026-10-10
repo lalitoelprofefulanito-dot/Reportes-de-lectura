@@ -5,6 +5,7 @@ Aplicación de una sola página para llevar el control de entregas y la revisió
 Contenido del repositorio:
 
 - `index.html`: la aplicación. Trae cifradas la lista de 100 alumnos, la ruta lectora de seis libros de cada uno y los apartados de su guía personalizada de la Ronda 1.
+- `lib/`: librerías para exportar a PDF (jsPDF y jsPDF-AutoTable) y a Word (docx), con sus licencias MIT. Solo se cargan al exportar.
 - `portadas/`: 190 portadas de los libros de las rutas, una por folio (`BV-0001.jpg`…). No contienen datos de alumnos.
 - `CRITERIOS.md`: criterios de revisión y su razón.
 
@@ -28,7 +29,7 @@ El archivo `.gitignore` ya bloquea esos nombres, pero conviene revisar antes de 
 2. Arriba a la derecha, pulse el botón **+** y elija **New repository**.
 3. En **Repository name** escriba, por ejemplo, `reportes-lectura`. Deje marcada la opción **Public** (GitHub Pages gratuito la necesita; recuerde que el código no lleva nombres). Pulse **Create repository**.
 4. En la página del repositorio nuevo, busque el enlace **uploading an existing file** (o el botón **Add file → Upload files**).
-5. Descomprima el zip en su computadora. Arrastre a esa ventana `index.html`, `README.md`, `CRITERIOS.md`, `.gitignore` **y la carpeta `portadas` completa** (en Chrome o Edge puede arrastrar la carpeta tal cual). Si su computadora oculta `.gitignore`, puede omitirlo.
+5. Descomprima el zip en su computadora. Arrastre a esa ventana `index.html`, `README.md`, `CRITERIOS.md`, `.gitignore` **y las carpetas `portadas` y `lib` completas** (en Chrome o Edge puede arrastrar la carpeta tal cual). Si su computadora oculta `.gitignore`, puede omitirlo.
 6. Abajo, en **Commit changes**, pulse el botón verde **Commit changes**.
 7. Vaya a la pestaña **Settings** del repositorio (arriba, con ícono de engrane).
 8. En el menú de la izquierda, pulse **Pages**.
@@ -101,3 +102,29 @@ Ambas se abren en Excel o en Hojas de cálculo de Google para graficar.
 ## Para otros docentes
 
 Para usarla con otra escuela basta con cambiar, dentro de `index.html`, la constante `SECCIONES` (apartados del formato de cada grado) y cargar su propia lista. Los criterios y su razón están en `CRITERIOS.md` y dentro de la pestaña **Criterios**.
+
+## Exportar a PDF o Word
+
+Arriba de cada pestaña hay una barra «Exportar esta vista: PDF · Word». Descarga lo que está viendo:
+
+- **Panel**: indicadores, entregas por grupo con gráfica, calidad por dimensión y lista por recibir.
+- **Entregas por grupo**: la tabla del grupo y la ronda elegidos.
+- **Revisar reporte**: el reporte del alumno elegido, con portada, perfil, apartados, dimensiones y observación.
+- **Criterios** y **Rondas y lista**.
+
+El **informe completo** está en el Panel (botones oscuros a la derecha de la barra) y en «Exportar y respaldos». Reúne todas las rondas con reportes:
+
+1. entregas por grupo, con gráfica y tabla;
+2. completitud de los apartados;
+3. calidad por dimensión y grupo;
+4. distribución de niveles;
+5. decisiones propias;
+6. siguientes pasos;
+7. forma de producción e ideas «a tu estilo»;
+8. concentrado por alumno;
+9. lista de quienes no han entregado;
+10. la ficha de cada reporte.
+
+Formato de todos los documentos: hoja carta, márgenes estrechos (1.27 cm), tablas a todo lo ancho y con los mismos anchos de columna en PDF y Word. Antes de crear el archivo, la aplicación mide cada sección: si a la última hoja le sobraría un poco de texto (menos de un tercio de la hoja), reduce la letra y los espacios, hasta un 76 %, para que todo quepa en una hoja menos. Los títulos no quedan solos al pie de una hoja, las filas no se parten y las tablas cortas no se dividen.
+
+Todos estos documentos llevan nombres: son internos. Las portadas aparecen cuando la página se abre desde GitHub Pages; si abre el archivo directamente desde su computadora, el documento sale sin portadas.
