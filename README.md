@@ -128,3 +128,22 @@ El **informe completo** está en el Panel (botones oscuros a la derecha de la ba
 Formato de todos los documentos: hoja carta, márgenes estrechos (1.27 cm), tablas a todo lo ancho y con los mismos anchos de columna en PDF y Word. Antes de crear el archivo, la aplicación mide cada sección: si a la última hoja le sobraría un poco de texto (menos de un tercio de la hoja), reduce la letra y los espacios, hasta un 76 %, para que todo quepa en una hoja menos. Los títulos no quedan solos al pie de una hoja, las filas no se parten y las tablas cortas no se dividen.
 
 Todos estos documentos llevan nombres: son internos. Las portadas aparecen cuando la página se abre desde GitHub Pages; si abre el archivo directamente desde su computadora, el documento sale sin portadas.
+
+## Cambiar la contraseña
+
+En **Rondas y lista → Contraseña de las listas** escriba la actual, la nueva dos veces y pulse **Cambiar contraseña**. Necesita tener activo el guardado en GitHub. La aplicación:
+
+1. vuelve a cifrar las listas dentro de `index.html` del repositorio (GitHub publica la página nueva en uno o dos minutos);
+2. guarda la llave de los datos envuelta con la contraseña nueva en `datos/llave.cifrada.json` (rama `datos`).
+
+Los registros y las fotos ya guardados no se vuelven a cifrar y siguen funcionando. Los equipos con la sesión abierta no notan el cambio; en un equipo nuevo se escribe la contraseña nueva, también al conectar GitHub.
+
+## Evidencias fotográficas
+
+En **Revisar reporte → Evidencias del reporte** se agregan las fotos del cuaderno (JPG o PNG; desde el celular abre la cámara). Se guardan comprimidas en el navegador y, con GitHub activo, cifradas en `datos/evidencias/`.
+
+Cada apartado y cada dimensión tiene un botón **📷 Evidencia**. Abre la foto con la zona marcada donde está lo que se valoró, lo que se lee ahí y por qué se registró así. Ahí mismo se puede marcar otra zona (**✏️ Marcar zona** y arrastrar sobre la foto) y corregir los textos. Las zonas de otros apartados aparecen punteadas con su número (E = encabezado, D1–D5 = dimensiones).
+
+El paquete `evidencias_ronda1_*.json` que prepara Claude a partir de las fotos se importa en **Exportar y respaldos → Restaurar o combinar respaldo**: agrega las fotos y las zonas sin borrar lo que usted ya capturó.
+
+El PDF o Word de un reporte individual incluye sus fotos con las zonas marcadas. El respaldo `.json` no lleva las fotos: viven en el navegador y en GitHub.
