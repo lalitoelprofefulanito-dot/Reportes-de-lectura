@@ -109,7 +109,7 @@ Arriba de cada pestaña hay una barra «Exportar esta vista: PDF · Word». Desc
 
 - **Panel**: indicadores, entregas por grupo con gráfica, calidad por dimensión y lista por recibir.
 - **Entregas por grupo**: la tabla del grupo y la ronda elegidos.
-- **Revisar reporte**: el reporte del alumno elegido, con portada, perfil, apartados, dimensiones y observación.
+- **Revisar reporte**: el reporte del alumno elegido, siempre en dos hojas carta (ver «El reporte de cada alumno» más abajo).
 - **Criterios** y **Rondas y lista**.
 
 El **informe completo** está en el Panel (botones oscuros a la derecha de la barra) y en «Exportar y respaldos». Reúne todas las rondas con reportes:
@@ -123,9 +123,16 @@ El **informe completo** está en el Panel (botones oscuros a la derecha de la ba
 7. forma de producción e ideas «a tu estilo»;
 8. concentrado por alumno;
 9. lista de quienes no han entregado;
-10. la ficha de cada reporte.
+10. la ficha de cada reporte, en el mismo formato de dos hojas que el reporte individual.
 
 Formato de todos los documentos: hoja carta, márgenes estrechos (1.27 cm), tablas a todo lo ancho y con los mismos anchos de columna en PDF y Word. Antes de crear el archivo, la aplicación mide cada sección: si a la última hoja le sobraría un poco de texto (menos de un tercio de la hoja), reduce la letra y los espacios, hasta un 76 %, para que todo quepa en una hoja menos. Los títulos no quedan solos al pie de una hoja, las filas no se parten y las tablas cortas no se dividen.
+
+### El reporte de cada alumno
+
+- **Hoja 1, el reporte.** Portada del libro, datos del libro y del alumno, apartados de su guía con su valoración («Completo», «En construcción» o «Aún no aparece») y lo que se observa en cada uno, las cinco dimensiones de lectura, el acompañamiento y el comentario general «Lo que muestra este reporte». La aplicación reduce la letra lo necesario (hasta 55 %) para que esta hoja quepa siempre en una sola página.
+- **Hoja 2, las evidencias.** Hasta cuatro fotografías del cuaderno con los recuadros marcados y una tabla que dice, para cada recuadro, en qué parte de la hoja está, quién lo escribió y qué se lee. Los documentos no mencionan nombres de archivo de las fotos. Si el reporte no tiene fotos, solo sale la hoja 1.
+
+Los textos están redactados para que cualquier lector, también las familias, entienda lo que el reporte muestra. El campo **Nota para el docente** de «Revisar» no sale en ningún documento: es el lugar para lo que se conversa en privado con el alumno o con la familia.
 
 Todos estos documentos llevan nombres: son internos. Las portadas aparecen cuando la página se abre desde GitHub Pages; si abre el archivo directamente desde su computadora, el documento sale sin portadas.
 
@@ -142,8 +149,8 @@ Los registros y las fotos ya guardados no se vuelven a cifrar y siguen funcionan
 
 En **Revisar reporte → Evidencias del reporte** se agregan las fotos del cuaderno (JPG o PNG; desde el celular abre la cámara). Se guardan comprimidas en el navegador y, con GitHub activo, cifradas en `datos/evidencias/`.
 
-Cada apartado y cada dimensión tiene un botón **📷 Evidencia**. Abre la foto con la zona marcada donde está lo que se valoró, lo que se lee ahí y por qué se registró así. Ahí mismo se puede marcar otra zona (**✏️ Marcar zona** y arrastrar sobre la foto) y corregir los textos. Las zonas de otros apartados aparecen punteadas con su número (E = encabezado, D1–D5 = dimensiones).
+Cada apartado y cada dimensión tiene un botón **📷 Evidencia**. Abre la foto con la zona marcada y tres textos: **Dónde está en la hoja y quién lo escribió** (por ejemplo «En la parte superior de la página derecha, con su letra; al lado, un adulto escribió con pluma azul…»), **Lo que se lee o se ve ahí** y **Lo que se observa**. Si deja «Dónde» vacío, la aplicación lo describe por la posición del recuadro («En la parte superior derecha de la fotografía»). Ahí mismo se puede marcar otra zona (**✏️ Marcar zona** y arrastrar sobre la foto) y corregir los textos. Las zonas de otros apartados aparecen punteadas con su número (E = encabezado, D1–D5 = dimensiones).
 
 El paquete `evidencias_ronda1_*.json` que prepara Claude a partir de las fotos se importa en **Exportar y respaldos → Restaurar o combinar respaldo**: agrega las fotos y las zonas sin borrar lo que usted ya capturó.
 
-El PDF o Word de un reporte individual incluye sus fotos con las zonas marcadas. El respaldo `.json` no lleva las fotos: viven en el navegador y en GitHub.
+El PDF o Word de un reporte individual lleva sus fotos con las zonas marcadas en la hoja 2. El respaldo `.json` no lleva las fotos: viven en el navegador y en GitHub.
