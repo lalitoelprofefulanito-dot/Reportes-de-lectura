@@ -151,6 +151,6 @@ En **Revisar reporte → Evidencias del reporte** se agregan las fotos del cuade
 
 Cada apartado y cada dimensión tiene un botón **📷 Evidencia**. Abre la foto con la zona marcada y tres textos: **Dónde está en la hoja y quién lo escribió** (por ejemplo «En la parte superior de la página derecha, con su letra; al lado, un adulto escribió con pluma azul…»), **Lo que se lee o se ve ahí** y **Lo que se observa**. Si deja «Dónde» vacío, la aplicación lo describe por la posición del recuadro («En la parte superior derecha de la fotografía»). Ahí mismo se puede marcar otra zona (**✏️ Marcar zona** y arrastrar sobre la foto) y corregir los textos. Las zonas de otros apartados aparecen punteadas con su número (E = encabezado, D1–D5 = dimensiones).
 
-El paquete `evidencias_ronda1_*.json` que prepara Claude a partir de las fotos se importa en **Exportar y respaldos → Restaurar o combinar respaldo**: agrega las fotos y las zonas sin borrar lo que usted ya capturó.
+El paquete `evidencias_ronda1_*.json` que prepara Claude a partir de las fotos se importa en **Exportar y respaldos → Restaurar o combinar respaldo**: agrega las fotos y las zonas sin borrar lo que usted ya capturó. Un paquete también puede corregir: dejar «Sin marcar» un apartado o una dimensión que se había valorado sin foto, o borrar un registro hecho por error.
 
 El PDF o Word de un reporte individual lleva sus fotos con las zonas marcadas en la hoja 2. El respaldo `.json` no lleva las fotos: viven en el navegador y en GitHub.

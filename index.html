@@ -157,7 +157,7 @@ dialog#visor::backdrop{background:rgba(0,0,0,.55)}
 <header>
   <h1>Control de Reportes de Lectura</h1>
   <p>Biblioteca Viva · Ciclo 2026-2027 · Uso interno del docente</p>
-  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7 · reporte en dos hojas</span>
+  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7.2 · reporte en dos hojas</span>
 </header>
 <nav id="nav" aria-label="Secciones">
   <button data-view="panel" aria-current="page">Panel</button>
@@ -542,8 +542,12 @@ function fijarManual(alumnoId, v){
 function borrarRegistro(alumnoId){
   const a=alumnoPorId(alumnoId);
   if(!confirm(`¿Borrar el registro de ${a.nombre} en ${rondaSel().nombre}? Se pierden fecha y revisión.`)) return;
-  S.registros = S.registros.filter(r=>!(r.alumnoId===alumnoId && r.ronda===rondaSel().id));
-  S.borrados.push({clave:alumnoId+"|"+rondaSel().id, fecha:new Date().toISOString()}); guardar(); render();
+  quitarRegistro(alumnoId, rondaSel().id); guardar(); render();
+}
+/* Quita el registro y deja la marca de borrado para que la sincronización con GitHub no lo traiga de vuelta. */
+function quitarRegistro(alumnoId, rondaId){
+  S.registros = S.registros.filter(r=>!(r.alumnoId===alumnoId && r.ronda===rondaId));
+  S.borrados.push({clave:alumnoId+"|"+rondaId, fecha:new Date().toISOString()});
 }
 function abrirRevision(alumnoId){ edicion={alumnoId}; ir("registrar"); }
 
@@ -1299,11 +1303,14 @@ async function importarEvidencias(d){
   }
   for(const n of d.registros || []){
     if(!alumnoPorId(n.alumnoId) || !rondaPorId(n.ronda)){ omit.push(n.alumnoId); continue; }
+    if(n.eliminar){ quitarRegistro(n.alumnoId, n.ronda); nr++; continue; }   /* registro hecho por error */
     const r = obtenerRegistro(n.alumnoId, n.ronda);
     for(const [k, v] of Object.entries(n)){
       if(k==="alumnoId" || k==="ronda") continue;
       if(k==="evidencias") r.evidencias = [...new Set([...(r.evidencias||[]), ...v])];
-      else if(k==="secciones" || k==="dimensiones" || k==="anclas") r[k] = {...(r[k]||{}), ...v};
+      else if(k==="secciones" || k==="dimensiones" || k==="anclas"){
+        /* null en el paquete = borrar esa valoración o esa zona (queda «Sin marcar») */
+        const m = {...(r[k]||{}), ...v}; Object.keys(m).forEach(x=>{ if(m[x]===null) delete m[x]; }); r[k] = m; }
       else r[k] = v;
     }
     tocar(r); nr++;
