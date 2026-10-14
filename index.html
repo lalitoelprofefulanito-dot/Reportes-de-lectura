@@ -68,6 +68,10 @@ button.btn.danger{border-color:var(--out);background:transparent;color:var(--out
 .e-extemporaneo{background:var(--late-bg);color:var(--late)}
 .e-fuera_plazo{background:var(--out-bg);color:var(--out)}
 .e-no_entregado{background:var(--out-fill);color:#fff}
+.s-ambos{background:var(--ok-bg);color:var(--ok)}
+.s-solo_reporte{background:var(--late-bg);color:var(--late)}
+.s-solo_libro{background:var(--just-bg);color:var(--just)}
+.s-ninguno{background:var(--out-bg);color:var(--out)}
 .e-pendiente{background:var(--pend-bg);color:var(--pend)}
 .e-no_aplica{background:var(--line);color:var(--muted)}
 .e-prorroga,.e-justificado{background:var(--just-bg);color:var(--just)}
@@ -157,7 +161,7 @@ dialog#visor::backdrop{background:rgba(0,0,0,.55)}
 <header>
   <h1>Control de Reportes de Lectura</h1>
   <p>Biblioteca Viva · Ciclo 2026-2027 · Uso interno del docente</p>
-  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7.2 · reporte en dos hojas</span>
+  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7.3 · reporte y libro por separado</span>
 </header>
 <nav id="nav" aria-label="Secciones">
   <button data-view="panel" aria-current="page">Panel</button>
@@ -364,6 +368,24 @@ function estadoEntrega(alumnoId, ronda){
   return hoy() <= L.extemporaneo ? "pendiente" : "no_entregado";
 }
 const porRecibir = (a, ronda) => { const e = estadoEntrega(a.id, ronda); return e==="pendiente" || e==="no_entregado" || e==="prorroga"; };
+/* El libro se registra aparte del reporte: «libroDevuelto» guarda la fecha en que regresó el libro de la ronda.
+   Cruzar ambas entregas da cuatro situaciones (la ronda que no aplica no entra en ninguna). */
+const SITUACIONES = {ambos:"Entregó reporte y libro", solo_reporte:"Entregó reporte · libro pendiente", solo_libro:"Entregó libro · sin reporte", ninguno:"Sin reporte ni libro"};
+const ordenLista = (a,b) => GRUPOS.indexOf(a.grupo)-GRUPOS.indexOf(b.grupo) || a.nl-b.nl;
+function situacionEntrega(alumnoId, ronda){
+  const e = estadoEntrega(alumnoId, ronda); if(e==="no_aplica") return "";
+  const reporte = e==="a_tiempo" || e==="extemporaneo" || e==="fuera_plazo";
+  const libro = !!registroDe(alumnoId, ronda.id)?.libroDevuelto;
+  return reporte ? (libro ? "ambos" : "solo_reporte") : (libro ? "solo_libro" : "ninguno");
+}
+function alumnosSituacion(ronda, sit, grupo){
+  return S.roster.filter(a=>(!grupo || a.grupo===grupo) && (sit==="todas" ? situacionEntrega(a.id,ronda) : situacionEntrega(a.id,ronda)===sit)).sort(ordenLista);
+}
+function conteoSituacion(ronda, grupo){
+  const c = Object.fromEntries(Object.keys(SITUACIONES).map(k=>[k,0]));
+  S.roster.filter(a=>!grupo || a.grupo===grupo).forEach(a=>{ const s = situacionEntrega(a.id, ronda); if(s) c[s]++; });
+  return c;
+}
 /* Apartados que se revisan: los de la guía personalizada si existe para esa ronda; si no, los del formato del grado. */
 function seccionesDe(alumnoId, rondaId){
   const g = perfilDe(alumnoId)?.guia;
@@ -450,12 +472,63 @@ function vistaPanel(){
       const comp = regs.map(r=>completitud(r)).filter(v=>v!==null);
       return `<tr><td>${g}</td>${celdas}<td>${comp.length?Math.round(comp.reduce((x,y)=>x+y,0)/comp.length)+"%":"—"}</td></tr>`; }).join("") || `<tr><td colspan="7" class="muted">Todavía no hay reportes revisados en esta ronda.</td></tr>`
   }</tbody></table></div></section>`;
+  html += tarjetaSituacion(ronda);
   html += `<section class="card"><h2>Por recibir</h2><p class="muted">Lista interna para el seguimiento: incluye pendientes y prórrogas que aún no entregan. «(P)» = prórroga acordada; una fecha entre paréntesis es la entrega propia que marca su guía.</p>${
     GRUPOS.map(g=>{ const f=S.roster.filter(a=>a.grupo===g && porRecibir(a,ronda)); if(!f.length) return "";
       return `<h3>${g} · ${f.length}</h3><p style="margin:0 0 6px">${f.map(a=>{ const L=limitesDe(a.id,ronda); return `${a.nl}. ${esc(a.nombre)}${estadoEntrega(a.id,ronda)==="prorroga"?" (P)":""}${L.propia?` (${fmtFecha(L.limite)})`:""}`; }).join(" · ")}</p><button class="btn small sec noprint" onclick="copiarPendientes('${g}')">Copiar lista de ${g}</button>`; }).join("") || `<p>Nadie pendiente en esta ronda.</p>`
   }</section>`;
   html += recordatorioRespaldo();
   return html;
+}
+let listaSit = "solo_libro", listaGrupo = "";
+function tarjetaSituacion(ronda){
+  const lista = alumnosSituacion(ronda, listaSit, listaGrupo);
+  return `<section class="card"><h2>Reporte y libro</h2>
+  <p class="muted">El reporte y el libro se entregan por separado. Esta tabla cruza las dos entregas para saber a quién pedirle qué. El libro se marca en «Entregas por grupo» (columna «Libro devuelto») o en «Revisar».</p>
+  <div class="tablewrap"><table><thead><tr><th>Grupo</th>${Object.entries(SITUACIONES).map(([k,v])=>`<th><span class="chip s-${k}">${v}</span></th>`).join("")}</tr></thead><tbody>${
+    GRUPOS.map(g=>{ if(!S.roster.some(a=>a.grupo===g)) return ""; const c=conteoSituacion(ronda,g); return `<tr><td>${g}</td>${Object.keys(SITUACIONES).map(k=>`<td>${c[k]}</td>`).join("")}</tr>`; }).join("")
+  }<tr><td><b>Total</b></td>${Object.values(conteoSituacion(ronda)).map(n=>`<td><b>${n}</b></td>`).join("")}</tr></tbody></table></div>
+  <h3>Lista para exportar</h3>
+  <div class="row noprint">
+    <label>Tipo de lista<select onchange="listaSit=this.value;render()">${Object.entries(SITUACIONES).map(([k,v])=>`<option value="${k}" ${k===listaSit?"selected":""}>${v}</option>`).join("")}<option value="todas" ${listaSit==="todas"?"selected":""}>Las cuatro listas</option></select></label>
+    <label>Grupo<select onchange="listaGrupo=this.value;render()"><option value="">Todos</option>${GRUPOS.map(g=>`<option ${g===listaGrupo?"selected":""}>${g}</option>`).join("")}</select></label>
+    <button class="btn small" onclick="exportarSituacion('pdf')">PDF</button>
+    <button class="btn small" onclick="exportarSituacion('word')">Word</button>
+    <button class="btn small sec" onclick="exportarSituacion('csv')">CSV (Excel)</button>
+    <button class="btn small sec" onclick="copiarSituacion()">Copiar</button>
+  </div>
+  ${lista.length ? `<div class="tablewrap"><table><thead><tr><th>Grupo</th><th>N.L.</th><th>Alumno</th><th>Libro de la ronda</th><th>Reporte</th><th>Libro devuelto</th></tr></thead><tbody>${
+    filasSituacion(ronda, lista).map(f=>`<tr>${f.map(v=>`<td>${esc(String(v))}</td>`).join("")}</tr>`).join("") }</tbody></table></div>`
+  : `<p>Nadie en esta lista${listaGrupo?` en ${listaGrupo}`:""}.</p>`}
+  </section>`;
+}
+/* Filas comunes a la tabla del panel, el CSV, el PDF y el Word. */
+function filasSituacion(ronda, lista){
+  return lista.map(a=>{ const r = registroDe(a.id, ronda.id); const f = r?.libro?.folio || folioDe(a.id, ronda.id); const e = estadoEntrega(a.id, ronda);
+    const titulo = r?.libro?.titulo || LIBROS[f]?.t || "";
+    return [a.grupo, a.nl, a.nombre, f||titulo ? `${titulo}${f?` (${f})`:""}` : "Sin libro de ruta", ESTADOS[e] + (r?.fechaRecepcion ? ` · ${fmtFecha(r.fechaRecepcion)}` : ""), r?.libroDevuelto ? fmtFecha(r.libroDevuelto) : "pendiente"]; });
+}
+function docSituacion(ronda, sit, grupo){
+  const cab = ["Grupo","N.L.","Alumno","Libro de la ronda","Reporte","Libro devuelto"];
+  const b = [{t:"kv", filas:Object.entries(conteoSituacion(ronda, grupo)).map(([k,n])=>[SITUACIONES[k], String(n)])}];
+  (sit==="todas" ? Object.keys(SITUACIONES) : [sit]).forEach(k=>{
+    const lista = alumnosSituacion(ronda, k, grupo);
+    b.push({t:"h2", x:`${SITUACIONES[k]} · ${lista.length}`});
+    b.push(lista.length ? {t:"tabla", cab, filas:filasSituacion(ronda, lista)} : {t:"p", x:"Nadie en esta lista.", tenue:true});
+  });
+  const nombre = sit==="todas" ? "Reporte y libro" : SITUACIONES[sit];
+  return {titulo:`${nombre} · ${ronda.nombre}${grupo?` · ${grupo}`:""}`, subtitulo:`Situación al ${fmtFecha(hoy())} · generado el ${fechaHora()}`, archivo:`Reporte_y_libro_${sit}_${grupo?slug(grupo)+"_":""}${ronda.id}_${hoy()}`, bloques:b};
+}
+function exportarSituacion(formato){
+  const ronda = rondaSel();
+  if(formato!=="csv") return exportarDoc(()=>docSituacion(ronda, listaSit, listaGrupo), formato);
+  const filas = (listaSit==="todas" ? Object.keys(SITUACIONES) : [listaSit]).flatMap(k=>filasSituacion(ronda, alumnosSituacion(ronda, k, listaGrupo)).map(f=>[SITUACIONES[k], ...f]));
+  descargar(`Reporte_y_libro_${listaSit}_${listaGrupo?slug(listaGrupo)+"_":""}${ronda.id}_${hoy()}.csv`, csv([["situacion","grupo","nl","alumno","libro_de_la_ronda","reporte","libro_devuelto"], ...filas]), "text/csv;charset=utf-8");
+}
+function copiarSituacion(){
+  const ronda = rondaSel(); const lista = alumnosSituacion(ronda, listaSit, listaGrupo);
+  const t = filasSituacion(ronda, lista).map(f=>`${f[0]} ${f[1]}. ${f[2]} — ${f[3]}`).join("\n");
+  navigator.clipboard?.writeText(`${listaSit==="todas"?"Reporte y libro":SITUACIONES[listaSit]} · ${ronda.nombre}${listaGrupo?` · ${listaGrupo}`:""}\n${t}`).then(()=>aviso("Lista copiada"),()=>aviso("No se pudo copiar"));
 }
 const tieneExtemporaneo = r => r.extemporaneo > r.limite;
 function avisoUnico(ronda){
@@ -486,14 +559,15 @@ function vistaGrupos(){
   return avisoUnico(ronda) + `<section class="card"><div class="row" style="justify-content:space-between">
     <h2 style="margin:0">Entregas por grupo</h2>
     <div class="row"><label>Grupo<select onchange="filtroGrupo=this.value;render()">${GRUPOS.map(g=>`<option ${g===filtroGrupo?"selected":""}>${g}</option>`).join("")}</select></label>${selectorRonda()}</div></div>
-  <p class="muted">«Recibido hoy» registra la entrega con la fecha de hoy (${fmtFecha(hoy())}). Si lo recibió otro día, escriba la fecha. La revisión del contenido se hace después, en «Revisar».</p>
-  <div class="tablewrap"><table><thead><tr><th>N.L.</th><th>Alumno</th><th>Libro de la ronda</th><th>Estado</th><th>Recibido</th><th class="noprint">Acciones</th></tr></thead><tbody>${
+  <p class="muted">«Recibido hoy» registra el reporte con la fecha de hoy (${fmtFecha(hoy())}); «Libro hoy», el regreso del libro. Son dos entregas distintas: un alumno puede devolver el libro sin reporte, o entregar el reporte y quedar a deber el libro. Si fue otro día, escriba la fecha. La revisión del contenido se hace después, en «Revisar».</p>
+  <div class="tablewrap"><table><thead><tr><th>N.L.</th><th>Alumno</th><th>Libro de la ronda</th><th>Estado</th><th>Reporte recibido</th><th>Libro devuelto</th><th class="noprint">Acciones</th></tr></thead><tbody>${
     lista.map(a=>{ const r=registroDe(a.id,ronda.id); const e=estadoEntrega(a.id,ronda); const f=folioDe(a.id,ronda.id); const L=limitesDe(a.id,ronda);
-      if(e==="no_aplica") return `<tr><td>${a.nl}</td><td>${esc(a.nombre)}</td><td><div class="libro">${portada(f)}<span>${esc(LIBROS[f]?.t||"")}<small>${esc(f)}</small></span></div></td><td colspan="3"><span class="chip e-no_aplica">${ESTADOS[e]}</span> <span class="muted">Sigue con el libro de la ronda anterior; su reporte se registra allí.</span></td></tr>`;
+      if(e==="no_aplica") return `<tr><td>${a.nl}</td><td>${esc(a.nombre)}</td><td><div class="libro">${portada(f)}<span>${esc(LIBROS[f]?.t||"")}<small>${esc(f)}</small></span></div></td><td colspan="4"><span class="chip e-no_aplica">${ESTADOS[e]}</span> <span class="muted">Sigue con el libro de la ronda anterior; su reporte se registra allí.</span></td></tr>`;
       return `<tr><td>${a.nl}</td><td>${esc(a.nombre)}${a.nota?` <span class="muted" title="${esc(a.nota)}">(*)</span>`:""}${revisado(r)?` <span class="chip" style="background:var(--brand-soft)">revisado</span>`:""}${L.propia?`<small class="ind">Su guía marca entrega el ${fmtFecha(L.limite)} (libro de dos rondas)</small>`:""}</td>
       <td><div class="libro">${portada(f)}<span>${esc(LIBROS[f]?.t||"Sin libro de ruta")}<small>${esc(f)}</small></span></div></td>
       <td><span class="chip e-${e}" id="chip-${a.id}">${ESTADOS[e]}</span></td>
-      <td><input type="date" value="${r?.fechaRecepcion||""}" aria-label="Fecha de recepción de ${esc(a.nombre)}" onchange="fijarFecha('${a.id}',this.value)"></td>
+      <td><input type="date" class="f-reporte" value="${r?.fechaRecepcion||""}" aria-label="Fecha de recepción del reporte de ${esc(a.nombre)}" onchange="fijarFecha('${a.id}',this.value)"></td>
+      <td><input type="date" class="f-libro" value="${r?.libroDevuelto||""}" aria-label="Fecha en que devolvió el libro ${esc(a.nombre)}" onchange="fijarLibro('${a.id}',this.value)"> <button class="btn small sec noprint" onclick="fijarLibro('${a.id}',hoy())">Libro hoy</button><br><span class="chip s-${situacionEntrega(a.id,ronda)}" id="sit-${a.id}">${SITUACIONES[situacionEntrega(a.id,ronda)]}</span></td>
       <td class="noprint"><div class="row" style="gap:4px">
         <button class="btn small" onclick="fijarFecha('${a.id}',hoy())">Recibido hoy</button>
         <select aria-label="Estado especial" onchange="fijarManual('${a.id}',this.value)">
@@ -525,8 +599,11 @@ function refrescarFila(alumnoId){
   if(vista!=="grupos" || !chip) return render();
   const e = estadoEntrega(alumnoId, rondaSel());
   chip.className = "chip e-"+e; chip.textContent = ESTADOS[e];
-  const fila = chip.closest("tr"); const f = fila.querySelector("input[type=date]");
-  const r = registroDe(alumnoId, rondaSel().id); if(f) f.value = r?.fechaRecepcion || "";
+  const fila = chip.closest("tr"); const r = registroDe(alumnoId, rondaSel().id);
+  fila.querySelector(".f-reporte").value = r?.fechaRecepcion || "";
+  fila.querySelector(".f-libro").value = r?.libroDevuelto || "";
+  const s = situacionEntrega(alumnoId, rondaSel()); const sit = document.getElementById("sit-"+alumnoId);
+  sit.className = "chip s-"+s; sit.textContent = SITUACIONES[s];
   const sel = fila.querySelector("select"); if(sel) sel.value = r?.estadoManual || "";
 }
 function fijarFecha(alumnoId, fecha){
@@ -534,6 +611,11 @@ function fijarFecha(alumnoId, fecha){
   const a = alumnoPorId(alumnoId);
   const e = estadoEntrega(alumnoId,rondaSel());
   if(fecha) aviso(`${a.grupo} n.º ${a.nl}: ${ESTADOS[e]}${e==="extemporaneo"?" · se acepta solo por esta ocasión":""}`);
+}
+function fijarLibro(alumnoId, fecha){
+  const r = obtenerRegistro(alumnoId, rondaSel().id); r.libroDevuelto = fecha; tocar(r); refrescarFila(alumnoId);
+  const a = alumnoPorId(alumnoId);
+  aviso(`${a.grupo} n.º ${a.nl}: ${SITUACIONES[situacionEntrega(alumnoId, rondaSel())]}`);
 }
 function fijarManual(alumnoId, v){
   if(!v) return; const r = obtenerRegistro(alumnoId, rondaSel().id);
@@ -589,6 +671,7 @@ function vistaRegistrar(){
   html += `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(sel.nombre)} · ${sel.grupo}</h2><span class="chip e-${e}">${ESTADOS[e]}</span></div>
   <h3>Entrega</h3><div class="row">
     <label>Fecha de recepción<input type="date" value="${r.fechaRecepcion||""}" onchange="campo('fechaRecepcion',this.value)"></label>
+    <label>Libro devuelto<input type="date" value="${r.libroDevuelto||""}" onchange="campo('libroDevuelto',this.value)"></label>
     <label>N.º de reporte<input type="number" min="1" style="width:90px" value="${esc(r.numReporte||"")}" onchange="campo('numReporte',this.value)"></label>
     <label>Fotografía(s) de origen<input type="text" placeholder="p. ej. 20261009_101500.jpg" value="${esc(r.fotos||"")}" onchange="campo('fotos',this.value)"></label>
   </div>
@@ -720,11 +803,11 @@ function exportarAgregado(){
   descargar(`reportes_resumen_por_grado_${hoy()}.csv`, csv(out), "text/csv;charset=utf-8");
 }
 function exportarInterno(){
-  const cab=["grupo","nl","alumno","ronda","n_reporte","fecha_recepcion","estado","produccion","titulo","autor","folio_bv","de_ruta","completitud_pct",...DIMENSIONES.map(d=>d.id),"idea_a_su_estilo","decisiones_propias","siguiente_paso","observacion","nota_docente","fotos","actualizado"];
+  const cab=["grupo","nl","alumno","ronda","n_reporte","fecha_recepcion","estado","libro_devuelto","situacion","produccion","titulo","autor","folio_bv","de_ruta","completitud_pct",...DIMENSIONES.map(d=>d.id),"idea_a_su_estilo","decisiones_propias","siguiente_paso","observacion","nota_docente","fotos","actualizado"];
   const rows=[];
   S.rondas.forEach(ronda=>S.roster.slice().sort((a,b)=>GRUPOS.indexOf(a.grupo)-GRUPOS.indexOf(b.grupo)||a.nl-b.nl).forEach(a=>{
     const r=registroDe(a.id,ronda.id)||{}; const g=gradoDe(a.grupo);
-    rows.push([a.grupo,a.nl,a.nombre,ronda.nombre,r.numReporte||"",r.fechaRecepcion?fmtFecha(r.fechaRecepcion):"",ESTADOS[estadoEntrega(a.id,ronda)],PRODUCCION[r.produccion]||"",r.libro?.titulo||(LIBROS[folioDe(a.id,ronda.id)]?.t||""),r.libro?.autor||(LIBROS[folioDe(a.id,ronda.id)]?.a||""),r.libro?.folio||folioDe(a.id,ronda.id),r.libro?.deRuta||"",r.alumnoId?completitud(r)??"":"",...DIMENSIONES.map(d=>dimAplica(d,g)?(r.dimensiones?.[d.id]||""):"n/a"),(()=>{ if(!r.estilo) return ""; if(r.estilo==="ninguna") return "apartado normal"; return perfilDe(a.id)?.guia?.estilo?.[r.estilo]?.idea||""; })(),(r.personalizacion||[]).map(i=>PERSONALIZACION[i]).join(" | "),(r.siguiente||[]).map(i=>SIGUIENTE[i]).join(" | "),r.observacion||"",r.notaDocente||"",r.fotos||"",r.actualizado||""]);
+    rows.push([a.grupo,a.nl,a.nombre,ronda.nombre,r.numReporte||"",r.fechaRecepcion?fmtFecha(r.fechaRecepcion):"",ESTADOS[estadoEntrega(a.id,ronda)],r.libroDevuelto?fmtFecha(r.libroDevuelto):"",SITUACIONES[situacionEntrega(a.id,ronda)]||"",PRODUCCION[r.produccion]||"",r.libro?.titulo||(LIBROS[folioDe(a.id,ronda.id)]?.t||""),r.libro?.autor||(LIBROS[folioDe(a.id,ronda.id)]?.a||""),r.libro?.folio||folioDe(a.id,ronda.id),r.libro?.deRuta||"",r.alumnoId?completitud(r)??"":"",...DIMENSIONES.map(d=>dimAplica(d,g)?(r.dimensiones?.[d.id]||""):"n/a"),(()=>{ if(!r.estilo) return ""; if(r.estilo==="ninguna") return "apartado normal"; return perfilDe(a.id)?.guia?.estilo?.[r.estilo]?.idea||""; })(),(r.personalizacion||[]).map(i=>PERSONALIZACION[i]).join(" | "),(r.siguiente||[]).map(i=>SIGUIENTE[i]).join(" | "),r.observacion||"",r.notaDocente||"",r.fotos||"",r.actualizado||""]);
   }));
   descargar(`INTERNO_reportes_lectura_${hoy()}.csv`, csv([cab,...rows]), "text/csv;charset=utf-8");
 }
@@ -758,7 +841,7 @@ function combinar(registros, rondas){
   autocompletarLibros(); guardar(); render();
   aviso(`${nuevos} nuevos, ${act} actualizados${omitidos.length?`, ${omitidos.length} omitidos (alumno o ronda no encontrados)`:""}`);
 }
-function obtenerRegistroVacio(alumnoId,ronda){ return {alumnoId, ronda, numReporte:"", fechaRecepcion:"", estadoManual:"", libro:{titulo:"",autor:"",folio:"",deRuta:""}, produccion:"", secciones:{}, dimensiones:{}, estilo:"", personalizacion:[], siguiente:[], observacion:"", fotos:"", actualizado:""}; }
+function obtenerRegistroVacio(alumnoId,ronda){ return {alumnoId, ronda, numReporte:"", fechaRecepcion:"", estadoManual:"", libroDevuelto:"", libro:{titulo:"",autor:"",folio:"",deRuta:""}, produccion:"", secciones:{}, dimensiones:{}, estilo:"", personalizacion:[], siguiente:[], observacion:"", fotos:"", actualizado:""}; }
 
 function vistaConfig(){
   return tarjetaContrasena() + `<section class="card"><h2>Rondas de entrega</h2>
@@ -1485,6 +1568,7 @@ function docPanel(ronda){
   b.push({t:"kv", filas:[["Reportes esperados", String(esperados)], ["Entregados", `${entregados} (${esperados?Math.round(100*entregados/esperados):0}%)`], ["A tiempo", String(c.a_tiempo)], ["Extemporáneos", String(c.extemporaneo)], ["Prórroga o justificado", String(c.prorroga+c.justificado)], ["Pendientes o no entregados", String(c.pendiente+c.no_entregado)]]});
   b.push({t:"h2", x:"Entregas por grupo"}, ...bloquesEntregas(ronda, est));
   b.push({t:"h2", x:"Calidad de los reportes revisados"}, ...bloquesCalidad(est));
+  b.push({t:"h2", x:"Reporte y libro"}, {t:"tabla", cab:["Grupo", ...Object.values(SITUACIONES)], filas:[...GRUPOS.filter(g=>S.roster.some(a=>a.grupo===g)).map(g=>[g, ...Object.values(conteoSituacion(ronda, g))]), ["Total", ...Object.values(conteoSituacion(ronda))]]});
   const faltan = S.roster.filter(a=>porRecibir(a, ronda)).sort((a,b)=>GRUPOS.indexOf(a.grupo)-GRUPOS.indexOf(b.grupo)||a.nl-b.nl);
   b.push({t:"h2", x:"Por recibir"});
   b.push(faltan.length ? {t:"tabla", cab:["Grupo","N.L.","Alumno","Estado","Fecha límite"], estadoCol:3,
@@ -1498,9 +1582,9 @@ function docGrupo(ronda, grupo){
   const est = estadisticasRonda(ronda).find(x=>x.g===grupo);
   return {titulo:`Entregas de ${grupo} · ${ronda.nombre}`, subtitulo:`Fecha límite ${fmtFecha(ronda.limite)} · generado el ${fechaHora()}`, archivo:`Entregas_${slug(grupo)}_${ronda.id}_${hoy()}`, bloques:[
     {t:"kv", filas:[["Alumnos", String(lista.length)], ["Entregados", `${est.entregados} / ${est.esperados}`], ["Revisados", String(est.regs.length)], ["Completitud media", est.comp.length ? Math.round(prom(est.comp))+"%" : "—"]]},
-    {t:"tabla", cab:["N.L.","Alumno","Libro de la ronda","Estado","Recibido","Completitud"], estadoCol:3, filas:lista.map(a=>{
+    {t:"tabla", cab:["N.L.","Alumno","Libro de la ronda","Estado","Recibido","Libro devuelto","Completitud"], estadoCol:3, filas:lista.map(a=>{
       const r = registroDe(a.id, ronda.id); const f = folioDe(a.id, ronda.id);
-      return [a.nl, a.nombre, f ? `${LIBROS[f]?.t||""} (${f})` : "Sin libro de ruta", ESTADOS[estadoEntrega(a.id,ronda)], r?.fechaRecepcion ? fmtFecha(r.fechaRecepcion) : "", r && revisado(r) ? (completitud(r)??"—")+"%" : ""]; })}
+      return [a.nl, a.nombre, f ? `${LIBROS[f]?.t||""} (${f})` : "Sin libro de ruta", ESTADOS[estadoEntrega(a.id,ronda)], r?.fechaRecepcion ? fmtFecha(r.fechaRecepcion) : "", r?.libroDevuelto ? fmtFecha(r.libroDevuelto) : "pendiente", r && revisado(r) ? (completitud(r)??"—")+"%" : ""]; })}
   ]};
 }
 
@@ -1635,7 +1719,7 @@ async function docInforme(){
         return [`${a.grupo} · ${a.nl}`, a.nombre, ESTADOS[estadoEntrega(a.id,ronda)], r.fechaRecepcion ? fmtFecha(r.fechaRecepcion) : "", comp===null ? "—" : comp+"%", ...DIMENSIONES.map(d=>!dimAplica(d,g) ? "n/a" : r.dimensiones?.[d.id] || "—")]; })});
     const sin = alumnosRonda.filter(a=>!conReporte(a, ronda));
     b.push({t:"h2", x:"9. Sin reporte recibido"});
-    b.push(sin.length ? {t:"tabla", chica:true, estadoCol:3, cab:["Grupo","N.L.","Alumno","Estado","Fecha límite"], filas:sin.map(a=>[a.grupo, a.nl, a.nombre, ESTADOS[estadoEntrega(a.id,ronda)], fmtFecha(limitesDe(a.id,ronda).limite)])} : {t:"p", x:"Todos entregaron."});
+    b.push(sin.length ? {t:"tabla", chica:true, estadoCol:3, cab:["Grupo","N.L.","Alumno","Estado","Fecha límite","Libro devuelto"], filas:sin.map(a=>[a.grupo, a.nl, a.nombre, ESTADOS[estadoEntrega(a.id,ronda)], fmtFecha(limitesDe(a.id,ronda).limite), registroDe(a.id,ronda.id)?.libroDevuelto ? fmtFecha(registroDe(a.id,ronda.id).libroDevuelto) : "pendiente"])} : {t:"p", x:"Todos entregaron."});
   });
   for(const ronda of rondas){
     /* El título de la ronda abre la primera ficha para no dejar una hoja casi vacía. */

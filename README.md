@@ -74,6 +74,7 @@ Formato del archivo de registros:
       "ronda": "R1",
       "numReporte": "1",
       "fechaRecepcion": "2026-10-09",
+      "libroDevuelto": "2026-10-09",
       "libro": {"titulo": "", "autor": "", "folio": "", "deRuta": ""},
       "produccion": "autonomo",
       "secciones": {"0": 2, "1": 2, "2": 1},
@@ -89,6 +90,27 @@ Formato del archivo de registros:
 ```
 
 `alumnoId` es grupo + número de lista (`6A-01`). Los nombres solo están en la lista privada.
+
+## Reporte y libro: dos entregas distintas
+
+El reporte y el libro se registran por separado, porque no siempre llegan juntos: hay familias que regresan el libro sin reporte y alumnos que entregan el reporte y se quedan con el libro unos días más.
+
+- **Entregas por grupo**: la columna **Reporte recibido** guarda la fecha del cuaderno; la columna **Libro devuelto** guarda la fecha en que regresó el libro (botón **Libro hoy** o escriba la fecha). Debajo aparece la situación del alumno.
+- **Revisar reporte**: el campo **Libro devuelto** está junto a la fecha de recepción.
+- En los paquetes `.json` el campo es `libroDevuelto` (fecha `AAAA-MM-DD`; vacío = libro pendiente).
+
+Con las dos fechas, cada alumno queda en una de cuatro situaciones por ronda (la ronda que «no aplica» por libro de dos rondas no entra):
+
+| Situación | Reporte | Libro |
+|---|---|---|
+| Entregó reporte y libro | recibido (a tiempo, extemporáneo o fuera de plazo) | devuelto |
+| Entregó reporte · libro pendiente | recibido | sin fecha |
+| Entregó libro · sin reporte | no recibido (incluye prórroga o justificado) | devuelto |
+| Sin reporte ni libro | no recibido | sin fecha |
+
+En el **Panel**, la tarjeta **Reporte y libro** muestra el conteo por grupo y, en **Lista para exportar**, se elige el tipo de lista (una de las cuatro o «Las cuatro listas») y el grupo (o todos). Se descarga en **PDF**, **Word** o **CSV (Excel)**, o se copia para mandarla por mensaje. El PDF y el Word del Panel, el de cada grupo, el informe completo (sección 9) y el CSV interno también traen la fecha del libro.
+
+Razón pedagógica: separar las dos entregas evita leer «no entregó» como un solo hecho. Un libro devuelto sin reporte pide una conversación sobre el reporte (¿qué apoyo faltó en casa o en el aula?); un reporte sin libro pide un recordatorio a la familia para que el libro siga circulando. Son acciones distintas para la escuela, la familia y, si hace falta, el especialista.
 
 ## Exportar para trabajar con 5.° y 6.°
 
