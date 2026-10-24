@@ -101,6 +101,12 @@ Formato del archivo de registros:
 
 `alumnoId` es grupo + número de lista (`6A-01`). Los nombres solo están en la lista privada.
 
+## Formato usado y paquetes de corrección (versión 7.7)
+
+- En **Revisar reporte**, «¿Con qué formato lo hizo?» permite valorar con la guía personalizada o con el formato de cuaderno del grado (campo `formato`: `"grado"` en los paquetes).
+- La completitud se calcula solo con los apartados revisados; la ficha dice cuántos quedan por revisar en el cuaderno.
+- Al importar un paquete, cada zona (`anclas`) se combina campo por campo: un paquete puede corregir la `razon` sin borrar el recuadro; una zona en `null` se borra. Las fechas ya capturadas (`fechaRecepcion`, `libroDevuelto`, `limitePropio`) no se sobrescriben salvo que el paquete traiga `"forzarFechas": true`.
+
 ## Reporte y libro: dos entregas distintas
 
 El reporte y el libro se registran por separado, porque no siempre llegan juntos: hay familias que regresan el libro sin reporte y alumnos que entregan el reporte y se quedan con el libro unos días más.

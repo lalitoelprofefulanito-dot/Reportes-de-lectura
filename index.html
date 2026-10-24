@@ -159,7 +159,7 @@ dialog#visor::backdrop{background:rgba(0,0,0,.55)}
 <header>
   <h1>Control de Reportes de Lectura</h1>
   <p>Biblioteca Viva · Ciclo 2026-2027 · Uso interno del docente</p>
-  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7.6 · calendario de rondas 2 a 6</span>
+  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7.7 · formato usado y revisión de la Ronda 1</span>
 </header>
 <nav id="nav" aria-label="Secciones">
   <button data-view="panel" aria-current="page">Panel</button>
@@ -693,7 +693,7 @@ function vistaRegistrar(){
   <h3>¿Cómo se produjo?</h3>${seg("prod", Object.entries(PRODUCCION), r.produccion||"", "campo('produccion',this.value)")}
   <p class="muted" style="font-size:.82rem">Dictar o contar en voz alta es una vía válida de expresión (DUA). Se registra para leer bien los datos, no para restar.</p>
   </section>`;
-  html += `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${G?"Apartados de su guía personalizada":`Apartados del formato de ${grado}.°`}</h2><span class="muted">Completitud: <b>${comp===null?"—":comp+"%"}</b></span></div>
+  html += `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${G && r.formato!=="grado"?"Apartados de su guía personalizada":`Apartados del formato de ${grado}.°`}</h2><span class="muted">Completitud: <b>${comp===null?"—":comp+"%"}</b></span></div>
   ${seccionesDe(sel.id, ronda.id).map((s,i)=>`<div class="secrow"><span>${i===0?"":i+". "}${esc(s.titulo)}${s.indicacion?`<small class="ind">${esc(s.indicacion)}</small>`:""}</span><span class="secctl">${seg("s"+i,[["0",VALORACION[0]],["1",VALORACION[1]],["2",VALORACION[2]]], r.secciones?.[i] ?? "", `seccion(${i},this.value)`)}${lineaEvidencia(sel.id, ronda.id, r, "s"+i)}</span></div>`).join("")}
   <p class="muted" style="font-size:.82rem">Completo = tiene lo que pide la indicación del apartado. En construcción = ya está, y le falta una parte. Aún no aparece = todavía no está en el reporte.</p></section>`;
   html += `<section class="card"><h2>Calidad: cinco dimensiones</h2>${
@@ -1647,7 +1647,7 @@ async function bloquesReporte(alumnoId, ronda, nivel){
     const filas = orden.filter(k=>an[k]?.w && incluidas.has(an[k].foto)).map(k=>[codigoAncla(k), etiquetaAncla(alumnoId, ronda.id, k), descripcionAncla(an[k])]);
     const otras = (r.evidencias||[]).length - imgs.length;
     b.push({t:"salto"}, {t:"ajustar"}, {t:h, x:`Evidencias del reporte · ${a.nombre}`},
-      {t:"p", tenue:true, x:"Los recuadros de las fotografías señalan dónde se encuentra lo que se registró en cada apartado. E = encabezado; los números son los apartados de su guía; D1 a D5, las dimensiones de lectura."},
+      {t:"p", tenue:true, x:`Los recuadros de las fotografías señalan dónde se encuentra lo que se registró en cada apartado. E = encabezado; los números son los apartados de ${r.formato==="grado" ? "su formato de grado" : "su guía"}; D1 a D5, las dimensiones de lectura.`},
       {t:"fotos", imgs:imgs.map((im,k)=>({...im, pie:`Fotografía ${k+1}${im.claves.length ? " · recuadros "+[...new Set(im.claves.map(codigoAncla))].join(", ") : ""}`}))});
     if(filas.length) b.push({t:"tabla", cab:["Recuadro","Apartado o dimensión","Dónde se encuentra y qué se aprecia"], filas});
     if(otras > 0) b.push({t:"p", tenue:true, x:`Además hay ${otras} fotografía(s) de este reporte que pueden consultarse en la aplicación.`});

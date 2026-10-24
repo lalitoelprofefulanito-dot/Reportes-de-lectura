@@ -23,13 +23,13 @@ Tres cuidados:
 | Estado | Cuándo |
 |---|---|
 | A tiempo | Recibido hasta la fecha límite |
-| Extemporáneo | Después de la fecha límite y hasta el día de extemporáneos |
-| Fuera de plazo | Después del día de extemporáneos; el reporte se registra igual |
+| Extemporáneo | Después de la fecha límite y hasta el cierre de la prórroga (Ronda 1: día de extemporáneos) |
+| Fuera de plazo | Después del cierre de la prórroga; el reporte se registra igual |
 | Prórroga acordada | Acuerdo previo con la familia o el equipo especialista |
 | Justificado | Ausencia o situación justificada |
 | Pendiente / No entregado | Sin recibir, con la ronda abierta / ya cerrada |
 
-Ronda 1: límite **09/10/2026**, extemporáneo hasta **12/10/2026**, **por única ocasión**. Las rondas siguientes no tienen día de extemporáneo: lo recibido después de la fecha límite queda como «Fuera de plazo» y se registra igual.
+Ronda 1: límite **09/10/2026**, extemporáneo hasta **12/10/2026**, **por única ocasión**. Desde la Ronda 2 el libro se presta en lunes, se recibe el viernes de la tercera semana y todos tienen **una semana más de prórroga**; lo recibido después queda como «Fuera de plazo» y se registra igual. Ronda 2: préstamo 26/10/2026, límite 13/11/2026, prórroga hasta 20/11/2026 (calendario completo en el README). Si se acuerda con la familia otra fecha para un alumno, se registra como «Fecha límite acordada».
 
 ## Apartados por grado
 
