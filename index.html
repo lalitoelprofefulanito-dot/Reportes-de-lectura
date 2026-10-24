@@ -60,6 +60,7 @@ button.btn.sec{background:transparent;color:var(--brand)}
 button.btn.small{padding:4px 8px;font-size:.82rem}
 button.btn.danger{border-color:var(--out);background:transparent;color:var(--out)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+@media (min-width:760px){.kpis{grid-template-columns:repeat(4,1fr)}}
 .kpi{border:1px solid var(--line);border-left:5px solid var(--k,var(--brand));border-radius:var(--radius);padding:10px 12px;background:var(--panel)}
 .kpi b{display:block;font-size:1.6rem;color:var(--k,var(--brand))}
 .kpi span{font-size:.8rem;color:var(--muted)}
@@ -101,9 +102,6 @@ th{color:var(--muted);font-weight:600;font-size:.8rem}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
 .hidden{display:none!important}
-.unica{display:flex;gap:12px;align-items:flex-start;background:var(--accent-soft);border:1px solid var(--accent);border-left:6px solid var(--accent);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px}
-.unica b{color:var(--accent)}
-.unica .ico{font-size:1.4rem;line-height:1}
 .lock{max-width:440px;margin:24px auto}
 .lock input{width:100%}
 .sync{display:inline-block;margin-top:6px;font-size:.78rem;padding:2px 9px;border-radius:999px;background:rgba(255,255,255,.18)}
@@ -161,7 +159,7 @@ dialog#visor::backdrop{background:rgba(0,0,0,.55)}
 <header>
   <h1>Control de Reportes de Lectura</h1>
   <p>Biblioteca Viva · Ciclo 2026-2027 · Uso interno del docente</p>
-  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7.4 · fecha límite acordada</span>
+  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7.5 · calendario de rondas 2 a 6</span>
 </header>
 <nav id="nav" aria-label="Secciones">
   <button data-view="panel" aria-current="page">Panel</button>
@@ -282,18 +280,21 @@ async function desbloquear(ev){
    ALMACENAMIENTO (solo en este navegador)
    ============================================================ */
 const KEY = "reportes_lectura_molino_v1";
-/* Ronda 1: la entrega extemporánea del lunes 12/10/2026 se acepta POR ÚNICA OCASIÓN.
-   Las demás rondas no tienen día de extemporáneo (extemporaneo = limite).
-   Fechas de las rondas 2 a 6: «Mi ruta lectora · septiembre – diciembre» de las tarjetas de perfil lector. */
+/* Ronda 1: la entrega extemporánea del lunes 12/10/2026 se aceptó por única ocasión.
+   Desde la Ronda 2 (calendario 2, 24/10/2026): el libro se presta en lunes, se recibe el viernes de la
+   tercera semana y todos tienen una semana más de prórroga («extemporaneo» = límite + 7 días).
+   La siguiente ronda empieza el primer lunes hábil después de la fecha límite
+   (16/11/2026 es descanso obligatorio; vacaciones del 21/12/2026 al 5/01/2027). */
 const RONDAS_INICIALES = [
   {id:"R1",nombre:"Ronda 1",inicio:"2026-09-28",limite:"2026-10-09",extemporaneo:"2026-10-12",extemporaneoUnico:true},
-  {id:"R2",nombre:"Ronda 2",inicio:"2026-10-12",limite:"2026-10-23",extemporaneo:"2026-10-23",extemporaneoUnico:false},
-  {id:"R3",nombre:"Ronda 3",inicio:"2026-10-26",limite:"2026-11-06",extemporaneo:"2026-11-06",extemporaneoUnico:false},
-  {id:"R4",nombre:"Ronda 4",inicio:"2026-11-09",limite:"2026-11-20",extemporaneo:"2026-11-20",extemporaneoUnico:false},
-  {id:"R5",nombre:"Ronda 5",inicio:"2026-11-23",limite:"2026-12-04",extemporaneo:"2026-12-04",extemporaneoUnico:false},
-  {id:"R6",nombre:"Ronda 6",inicio:"2026-12-07",limite:"2026-12-18",extemporaneo:"2026-12-18",extemporaneoUnico:false}
+  {id:"R2",nombre:"Ronda 2",inicio:"2026-10-26",limite:"2026-11-13",extemporaneo:"2026-11-20",extemporaneoUnico:false},
+  {id:"R3",nombre:"Ronda 3",inicio:"2026-11-23",limite:"2026-12-11",extemporaneo:"2026-12-18",extemporaneoUnico:false},
+  {id:"R4",nombre:"Ronda 4",inicio:"2026-12-14",limite:"2027-01-15",extemporaneo:"2027-01-22",extemporaneoUnico:false},
+  {id:"R5",nombre:"Ronda 5",inicio:"2027-01-18",limite:"2027-02-05",extemporaneo:"2027-02-12",extemporaneoUnico:false},
+  {id:"R6",nombre:"Ronda 6",inicio:"2027-02-08",limite:"2027-02-26",extemporaneo:"2027-03-05",extemporaneoUnico:false}
 ];
-function estadoVacio(){ return {version:2, roster:[], perfiles:null, rondas:structuredClone(RONDAS_INICIALES), registros:[], borrados:[], fotosMeta:{}, ultimoRespaldo:null}; }
+const CALENDARIO = 2;
+function estadoVacio(){ return {version:2, calendario:CALENDARIO, roster:[], perfiles:null, rondas:structuredClone(RONDAS_INICIALES), registros:[], borrados:[], fotosMeta:{}, ultimoRespaldo:null}; }
 let S;
 function cargar(){
   try{ const raw = localStorage.getItem(KEY); S = raw ? JSON.parse(raw) : estadoVacio(); }
@@ -301,6 +302,11 @@ function cargar(){
   if(!S.rondas || !S.rondas.length) S.rondas = structuredClone(RONDAS_INICIALES);
   const r1 = S.rondas.find(r=>r.id==="R1"); if(r1 && r1.extemporaneoUnico===undefined) r1.extemporaneoUnico = true;
   RONDAS_INICIALES.forEach(r=>{ if(!S.rondas.some(x=>x.id===r.id || x.nombre===r.nombre)) S.rondas.push(structuredClone(r)); });
+  /* Un navegador con un calendario anterior recibe las fechas nuevas de las rondas 2 a 6 una sola vez. */
+  if((S.calendario||1) < CALENDARIO){
+    RONDAS_INICIALES.filter(r=>r.id!=="R1").forEach(r=>{ const x = S.rondas.find(y=>y.id===r.id); if(x) Object.assign(x, {inicio:r.inicio, limite:r.limite, extemporaneo:r.extemporaneo, extemporaneoUnico:false}); });
+    S.calendario = CALENDARIO; guardarLocal();
+  }
   S.rondas.sort((a,b)=>a.limite.localeCompare(b.limite));
   if(!S.borrados) S.borrados = [];
   if(S.perfiles) autocompletarLibros();
@@ -451,9 +457,10 @@ function vistaPanel(){
   const faltan = c.pendiente + c.no_entregado;
   const total2 = total - c.no_aplica;
   const dias = Math.round((new Date(ronda.extemporaneo) - new Date(hoy()))/864e5);
-  const cierre = tieneExtemporaneo(ronda) ? "para cerrar extemporáneos" : "para la fecha límite";
-  let html = avisoUnico(ronda) + `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Panel de la ronda</h2>${selectorRonda()}</div>
-  <p class="muted">Fecha límite: <b>${fmtFecha(ronda.limite)}</b>${tieneExtemporaneo(ronda)?` · Extemporáneo (única ocasión) hasta: <b>${fmtFecha(ronda.extemporaneo)}</b>`:" · Sin extemporáneo"} · Hoy: ${fmtFecha(hoy())}${dias>=0?` · faltan ${dias} día(s) ${cierre}`:" · ronda cerrada"}</p>
+  const cierre = tieneExtemporaneo(ronda) ? (ronda.extemporaneoUnico ? "para cerrar extemporáneos" : "para cerrar la prórroga") : "para la fecha límite";
+  const cs = conteoSituacion(ronda);
+  let html = `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Panel de la ronda</h2>${selectorRonda()}</div>
+  <p class="muted">Fecha límite: <b>${fmtFecha(ronda.limite)}</b>${tieneExtemporaneo(ronda)?` · ${nombreExtra(ronda)} hasta: <b>${fmtFecha(ronda.extemporaneo)}</b>`:" · Sin prórroga"} · Hoy: ${fmtFecha(hoy())}${dias>=0?` · faltan ${dias} día(s) ${cierre}`:" · ronda cerrada"}</p>
   <div class="kpis">
     <div class="kpi" style="--k:var(--brand)"><b>${total2}</b><span>Reportes esperados${c.no_aplica?` (${c.no_aplica} con libro de dos rondas)`:""}</span></div>
     <div class="kpi" style="--k:var(--brand-2)"><b>${entregados}</b><span>Entregados (${total2?Math.round(100*entregados/total2):0}%)</span></div>
@@ -461,6 +468,8 @@ function vistaPanel(){
     <div class="kpi" style="--k:var(--late)"><b>${c.extemporaneo}</b><span>Extemporáneos</span></div>
     <div class="kpi" style="--k:var(--just)"><b>${c.prorroga+c.justificado}</b><span>Prórroga o justificado</span></div>
     <div class="kpi" style="--k:var(--out)"><b>${faltan}</b><span>${dias>=0?"Pendientes":"No entregados"}</span></div>
+    <div class="kpi" style="--k:var(--ok)"><b>${cs.ambos+cs.solo_libro}</b><span>Libros que sí se entregaron</span></div>
+    <div class="kpi" style="--k:var(--out)"><b>${cs.solo_reporte+cs.ninguno}</b><span>Libros que no se entregaron</span></div>
   </div></section>`;
   html += `<section class="card"><h2>Entregas por grupo</h2>${leyenda()}<table><thead><tr><th>Grupo</th><th style="width:55%">Estado</th><th>Entregados</th><th>Revisados</th></tr></thead><tbody>${
     GRUPOS.map(g=>{ const cg=conteo(ronda,g); const tg=S.roster.filter(a=>a.grupo===g).length; if(!tg) return "";
@@ -534,14 +543,8 @@ function copiarSituacion(){
   navigator.clipboard?.writeText(`${listaSit==="todas"?"Reporte y libro":SITUACIONES[listaSit]} · ${ronda.nombre}${listaGrupo?` · ${listaGrupo}`:""}\n${t}`).then(()=>aviso("Lista copiada"),()=>aviso("No se pudo copiar"));
 }
 const tieneExtemporaneo = r => r.extemporaneo > r.limite;
-function avisoUnico(ronda){
-  if(tieneExtemporaneo(ronda) && ronda.extemporaneoUnico){
-    const abierta = hoy() <= ronda.extemporaneo;
-    return `<div class="unica" role="note"><span class="ico" aria-hidden="true">⚠️</span><div><b>Solo por esta ocasión.</b> En la ${esc(ronda.nombre)} se recibe entrega extemporánea hasta el <b>lunes ${fmtFecha(ronda.extemporaneo)}</b>. Es una excepción única: a partir de la siguiente ronda no habrá fecha de extemporáneo y lo recibido después de la fecha límite quedará como «Fuera de plazo».${abierta?" Conviene recordarlo a los grupos al recibir los cuadernos.":""}</div></div>`;
-  }
-  if(!tieneExtemporaneo(ronda)) return `<div class="note">En la ${esc(ronda.nombre)} no hay fecha de extemporáneo: la entrega extemporánea se aceptó por única ocasión en la Ronda 1.</div>`;
-  return "";
-}
+/* Nombre del periodo después de la fecha límite: extemporáneo (Ronda 1, única ocasión) o prórroga para todos. */
+const nombreExtra = r => r.extemporaneoUnico ? "Extemporáneo (única ocasión)" : "Prórroga para todos";
 function recordatorioRespaldo(){
   if(!S.registros.length || syncActiva()) return "";
   const ult = S.ultimoRespaldo ? new Date(S.ultimoRespaldo) : null;
@@ -559,7 +562,7 @@ function vistaGrupos(){
   if(necesitaDesbloqueo()) return sinLista();
   const ronda = rondaSel();
   const lista = S.roster.filter(a=>a.grupo===filtroGrupo).sort((a,b)=>a.nl-b.nl);
-  return avisoUnico(ronda) + `<section class="card"><div class="row" style="justify-content:space-between">
+  return `<section class="card"><div class="row" style="justify-content:space-between">
     <h2 style="margin:0">Entregas por grupo</h2>
     <div class="row"><label>Grupo<select onchange="filtroGrupo=this.value;render()">${GRUPOS.map(g=>`<option ${g===filtroGrupo?"selected":""}>${g}</option>`).join("")}</select></label>${selectorRonda()}</div></div>
   <p class="muted">«Recibido hoy» registra el reporte con la fecha de hoy (${fmtFecha(hoy())}); «Libro hoy», el regreso del libro. Son dos entregas distintas: un alumno puede devolver el libro sin reporte, o entregar el reporte y quedar a deber el libro. Si fue otro día, escriba la fecha. La revisión del contenido se hace después, en «Revisar».</p>
@@ -613,7 +616,7 @@ function fijarFecha(alumnoId, fecha){
   const r = obtenerRegistro(alumnoId, rondaSel().id); r.fechaRecepcion = fecha; tocar(r); refrescarFila(alumnoId);
   const a = alumnoPorId(alumnoId);
   const e = estadoEntrega(alumnoId,rondaSel());
-  if(fecha) aviso(`${a.grupo} n.º ${a.nl}: ${ESTADOS[e]}${e==="extemporaneo"?" · se acepta solo por esta ocasión":""}`);
+  if(fecha) aviso(`${a.grupo} n.º ${a.nl}: ${ESTADOS[e]}${e==="extemporaneo"?(rondaSel().extemporaneoUnico?" · se acepta solo por esta ocasión":" · dentro de la semana de prórroga"):""}`);
 }
 function fijarLibro(alumnoId, fecha){
   const r = obtenerRegistro(alumnoId, rondaSel().id); r.libroDevuelto = fecha; tocar(r); refrescarFila(alumnoId);
@@ -735,8 +738,8 @@ function vistaCriterios(){
   </section>
   <section class="card"><h2>Estados de entrega</h2><table><tbody>
    <tr><td><span class="chip e-a_tiempo">A tiempo</span></td><td>Recibido hasta la fecha límite de la ronda.</td></tr>
-   <tr><td><span class="chip e-extemporaneo">Extemporáneo</span></td><td>Recibido después de la fecha límite y hasta el día de extemporáneos. Solo existe en la Ronda 1, por única ocasión (lunes 12/10/2026).</td></tr>
-   <tr><td><span class="chip e-fuera_plazo">Fuera de plazo</span></td><td>Recibido después del día de extemporáneos. Se registra igual: el reporte cuenta para la lectura aunque no para el plazo.</td></tr>
+   <tr><td><span class="chip e-extemporaneo">Extemporáneo</span></td><td>Recibido después de la fecha límite y hasta el cierre de la prórroga. En la Ronda 1 fue por única ocasión (lunes 12/10/2026); desde la Ronda 2 todos tienen una semana de prórroga después de la fecha límite.</td></tr>
+   <tr><td><span class="chip e-fuera_plazo">Fuera de plazo</span></td><td>Recibido después del cierre de la prórroga. Se registra igual: el reporte cuenta para la lectura aunque no para el plazo.</td></tr>
    <tr><td><span class="chip e-prorroga">Prórroga acordada</span></td><td>Hubo un acuerdo previo con la familia o con el equipo especialista. Al registrar la fecha de recepción, el estado pasa a calcularse con esa fecha.</td></tr>
    <tr><td><span class="chip e-justificado">Justificado</span></td><td>Ausencia o situación justificada.</td></tr>
    <tr><td><span class="chip e-pendiente">Pendiente</span></td><td>Sin recibir, y la ronda sigue abierta.</td></tr>
@@ -849,8 +852,8 @@ function obtenerRegistroVacio(alumnoId,ronda){ return {alumnoId, ronda, numRepor
 
 function vistaConfig(){
   return tarjetaContrasena() + `<section class="card"><h2>Rondas de entrega</h2>
-  <p class="muted">El estado de cada entrega se calcula con estas fechas. Puede corregirlas sin perder registros. Si «Extemporáneo hasta» es igual a la fecha límite, la ronda no tiene extemporáneo. La Ronda 1 es la única con extemporáneo, por acuerdo de única ocasión.</p>
-  <div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Inicio</th><th>Fecha límite</th><th>Extemporáneo hasta</th><th></th></tr></thead><tbody>${
+  <p class="muted">El estado de cada entrega se calcula con estas fechas. Puede corregirlas sin perder registros. Desde la Ronda 2 el libro se presta en lunes, se recibe el viernes de la tercera semana y todos tienen una semana más de prórroga («Prórroga hasta»). La Ronda 1 tuvo extemporáneo por única ocasión. Si «Prórroga hasta» es igual a la fecha límite, la ronda no tiene prórroga.</p>
+  <div class="tablewrap"><table><thead><tr><th>Nombre</th><th>Inicio</th><th>Fecha límite</th><th>Prórroga hasta</th><th></th></tr></thead><tbody>${
     S.rondas.map((r,i)=>`<tr><td><input type="text" value="${esc(r.nombre)}" onchange="editarRonda(${i},'nombre',this.value)"></td>
     <td><input type="date" value="${r.inicio||""}" onchange="editarRonda(${i},'inicio',this.value)"></td>
     <td><input type="date" value="${r.limite}" onchange="editarRonda(${i},'limite',this.value)"></td>
@@ -868,15 +871,15 @@ function vistaConfig(){
 }
 function editarRonda(i,k,v){
   const r=S.rondas[i]; r[k]=v;
-  if(r.extemporaneo < r.limite) aviso("Atención: el día de extemporáneos es anterior a la fecha límite");
+  if(r.extemporaneo < r.limite) aviso("Atención: el cierre de la prórroga es anterior a la fecha límite");
   guardar(); render();
 }
 function agregarRonda(){
   const ult=S.rondas[S.rondas.length-1]; const n=S.rondas.length+1;
   const mas = (iso,d)=>{ const t=new Date(iso+"T12:00:00"); t.setDate(t.getDate()+d); return t.toISOString().slice(0,10); };
-  const limite = mas(ult.limite,14);
-  S.rondas.push({id:"R"+n+"-"+uid().slice(0,4), nombre:"Ronda "+n, inicio:mas(ult.limite,1), limite, extemporaneo:limite, extemporaneoUnico:false});
-  guardar(); render(); aviso("Ronda agregada sin extemporáneo; revise la fecha límite");
+  const inicio = mas(ult.limite,3), limite = mas(inicio,18);   /* lunes siguiente → viernes de la tercera semana */
+  S.rondas.push({id:"R"+n+"-"+uid().slice(0,4), nombre:"Ronda "+n, inicio, limite, extemporaneo:mas(limite,7), extemporaneoUnico:false});
+  guardar(); render(); aviso("Ronda agregada con una semana de prórroga; revise días festivos y vacaciones");
 }
 function quitarRonda(i){ S.rondas.splice(i,1); guardar(); render(); }
 function borrarTodo(){ if(confirm("¿Borrar TODA la lista y TODOS los registros de este navegador? Lo guardado en GitHub no se toca.") && confirm("Confirme de nuevo: esta acción no se puede deshacer.")){ [KEY,GH_KEY,CLAVE_KEY].forEach(k=>localStorage.removeItem(k)); try{ indexedDB.deleteDatabase(IDB_NOMBRE); idb.p = null; urlsFoto.clear(); }catch(e){} gh=null; claveDatos=null; estadoSync={tipo:"",texto:""}; cargar(); render(); pintarSync(); aviso("Datos borrados de este navegador"); } }
@@ -1568,8 +1571,7 @@ function docPanel(ronda){
   const est = estadisticasRonda(ronda); const c = conteo(ronda);
   const esperados = S.roster.length - c.no_aplica; const entregados = c.a_tiempo+c.extemporaneo+c.fuera_plazo;
   const b = [];
-  if(tieneExtemporaneo(ronda) && ronda.extemporaneoUnico) b.push({t:"p", x:`Solo por esta ocasión se recibe entrega extemporánea hasta el ${fmtFecha(ronda.extemporaneo)}. A partir de la siguiente ronda no habrá fecha de extemporáneo.`});
-  b.push({t:"kv", filas:[["Reportes esperados", String(esperados)], ["Entregados", `${entregados} (${esperados?Math.round(100*entregados/esperados):0}%)`], ["A tiempo", String(c.a_tiempo)], ["Extemporáneos", String(c.extemporaneo)], ["Prórroga o justificado", String(c.prorroga+c.justificado)], ["Pendientes o no entregados", String(c.pendiente+c.no_entregado)]]});
+  b.push({t:"kv", filas:[["Reportes esperados", String(esperados)], ["Entregados", `${entregados} (${esperados?Math.round(100*entregados/esperados):0}%)`], ["A tiempo", String(c.a_tiempo)], ["Extemporáneos", String(c.extemporaneo)], ["Prórroga o justificado", String(c.prorroga+c.justificado)], ["Pendientes o no entregados", String(c.pendiente+c.no_entregado)], ["Libros que sí se entregaron", String(conteoSituacion(ronda).ambos+conteoSituacion(ronda).solo_libro)], ["Libros que no se entregaron", String(conteoSituacion(ronda).solo_reporte+conteoSituacion(ronda).ninguno)]]});
   b.push({t:"h2", x:"Entregas por grupo"}, ...bloquesEntregas(ronda, est));
   b.push({t:"h2", x:"Calidad de los reportes revisados"}, ...bloquesCalidad(est));
   b.push({t:"h2", x:"Reporte y libro"}, {t:"tabla", cab:["Grupo", ...Object.values(SITUACIONES)], filas:[...GRUPOS.filter(g=>S.roster.some(a=>a.grupo===g)).map(g=>[g, ...Object.values(conteoSituacion(ronda, g))]), ["Total", ...Object.values(conteoSituacion(ronda))]]});
@@ -1667,7 +1669,7 @@ const docCriterios = () => ({titulo:"Criterios para revisar reportes de lectura"
 /* Documento de la vista «Rondas y lista» */
 const docRondas = () => ({titulo:"Rondas de entrega y lista de alumnos", subtitulo:`Generado el ${fechaHora()}`, archivo:`Rondas_y_lista_${hoy()}`, bloques:[
   {t:"h2", x:"Rondas"},
-  {t:"tabla", cab:["Ronda","Inicio","Fecha límite","Extemporáneo hasta"], filas:S.rondas.map(r=>[r.nombre, fmtFecha(r.inicio), fmtFecha(r.limite), tieneExtemporaneo(r) ? fmtFecha(r.extemporaneo)+(r.extemporaneoUnico?" (única ocasión)":"") : "Sin extemporáneo"])},
+  {t:"tabla", cab:["Ronda","Préstamo","Fecha límite","Prórroga hasta"], filas:S.rondas.map(r=>[r.nombre, fmtFecha(r.inicio), fmtFecha(r.limite), tieneExtemporaneo(r) ? fmtFecha(r.extemporaneo)+(r.extemporaneoUnico?" (extemporáneo, única ocasión)":"") : "Sin prórroga"])},
   {t:"h2", x:"Alumnos por grupo"},
   {t:"tabla", cab:["Grupo","Alumnos"], filas:GRUPOS.map(g=>[g, String(S.roster.filter(a=>a.grupo===g).length)])}
 ]});

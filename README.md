@@ -40,7 +40,17 @@ El archivo `.gitignore` ya bloquea esos nombres, pero conviene revisar antes de 
 
 1. Abra la dirección de su página.
 2. Escriba la contraseña de las listas y pulse **Abrir listas**. Se abre directamente **Entregas por grupo**.
-3. La **Ronda 1** ya trae: límite 09/10/2026 y extemporáneo hasta el lunes 12/10/2026, **por única ocasión**. La app lo recuerda con un aviso en el Panel y en Entregas por grupo, y las rondas nuevas se crean sin extemporáneo.
+3. Calendario de rondas (pestaña **Rondas y lista**). La **Ronda 1** tuvo límite 09/10/2026 y extemporáneo hasta el lunes 12/10/2026, por única ocasión. Desde la **Ronda 2** el libro se presta en lunes, se recibe el viernes de la tercera semana y todos tienen **una semana más de prórroga**. La siguiente ronda empieza el primer lunes hábil después de la fecha límite:
+
+   | Ronda | Préstamo | Fecha límite | Prórroga hasta |
+   |---|---|---|---|
+   | 2 | lun 26/10/2026 | vie 13/11/2026 | vie 20/11/2026 |
+   | 3 | lun 23/11/2026 (el 16/11 es descanso obligatorio) | vie 11/12/2026 | vie 18/12/2026 |
+   | 4 | lun 14/12/2026 | vie 15/01/2027 (tercera semana de clases, contando las vacaciones del 21/12 al 5/01) | vie 22/01/2027 |
+   | 5 | lun 18/01/2027 | vie 05/02/2027 | vie 12/02/2027 |
+   | 6 | lun 08/02/2027 | vie 26/02/2027 | vie 05/03/2027 |
+
+   Si un navegador ya tenía las fechas anteriores, la app las cambia por estas una sola vez al abrirla. Después pueden corregirse a mano en esa pestaña. «Agregar ronda» usa la misma regla.
 4. En **Entregas por grupo**, marque cada cuaderno con **Recibido hoy** o escriba la fecha en que lo recibió.
 5. Cuando tenga tiempo, entre a **Revisar** para valorar el contenido.
 6. Active una sola vez el **guardado automático en GitHub** (siguiente apartado). Desde ese momento ya no hace falta exportar.
@@ -130,7 +140,7 @@ Para usarla con otra escuela basta con cambiar, dentro de `index.html`, la const
 
 Arriba de cada pestaña hay una barra «Exportar esta vista: PDF · Word». Descarga lo que está viendo:
 
-- **Panel**: indicadores, entregas por grupo con gráfica, calidad por dimensión y lista por recibir.
+- **Panel**: indicadores (incluidos libros que sí y que no se entregaron), entregas por grupo con gráfica, calidad por dimensión y lista por recibir.
 - **Entregas por grupo**: la tabla del grupo y la ronda elegidos.
 - **Revisar reporte**: el reporte del alumno elegido, siempre en dos hojas carta (ver «El reporte de cada alumno» más abajo).
 - **Criterios** y **Rondas y lista**.
