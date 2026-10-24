@@ -97,6 +97,7 @@ El reporte y el libro se registran por separado, porque no siempre llegan juntos
 
 - **Entregas por grupo**: la columna **Reporte recibido** guarda la fecha del cuaderno; la columna **Libro devuelto** guarda la fecha en que regresó el libro (botón **Libro hoy** o escriba la fecha). Debajo aparece la situación del alumno.
 - **Revisar reporte**: el campo **Libro devuelto** está junto a la fecha de recepción.
+- **Fecha límite acordada**: en **Revisar reporte**, junto a la fecha de recepción. Úsela cuando se acuerde con la familia otra fecha para ese alumno (por ejemplo, porque recibió tarde el libro): mientras no llegue esa fecha, el alumno aparece como «Pendiente» y no como «No entregado» ni «Prórroga». En los paquetes `.json` el campo es `limitePropio` (`AAAA-MM-DD`). Si existe, manda sobre la fecha que marca su guía.
 - En los paquetes `.json` el campo es `libroDevuelto` (fecha `AAAA-MM-DD`; vacío = libro pendiente).
 
 Con las dos fechas, cada alumno queda en una de cuatro situaciones por ronda (la ronda que «no aplica» por libro de dos rondas no entra):
