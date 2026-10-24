@@ -159,7 +159,7 @@ dialog#visor::backdrop{background:rgba(0,0,0,.55)}
 <header>
   <h1>Control de Reportes de Lectura</h1>
   <p>Biblioteca Viva · Ciclo 2026-2027 · Uso interno del docente</p>
-  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7.5 · calendario de rondas 2 a 6</span>
+  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7.6 · calendario de rondas 2 a 6</span>
 </header>
 <nav id="nav" aria-label="Secciones">
   <button data-view="panel" aria-current="page">Panel</button>
@@ -974,7 +974,9 @@ function fusionar(remoto){
   S.borrados = [...borr].map(([clave,fecha])=>({clave,fecha}));
   const mapa = new Map(S.registros.map(r=>[claveReg(r), r]));
   (remoto.registros||[]).forEach(n=>{ const l = mapa.get(claveReg(n)); if(!l || (n.actualizado||"") > (l.actualizado||"")) mapa.set(claveReg(n), n); });
-  S.registros = [...mapa.values()].filter(r=>!(borr.has(claveReg(r)) && (r.actualizado||"") <= borr.get(claveReg(r))));
+  /* Se descarta solo lo anterior al borrado. Un paquete con «eliminar» seguido del registro nuevo los crea en el mismo
+     milisegundo; con «<=» el registro nuevo se perdía al sincronizar. */
+  S.registros = [...mapa.values()].filter(r=>!(borr.has(claveReg(r)) && (r.actualizado||"") < borr.get(claveReg(r))));
 }
 function pintarSync(){
   const el = $("#sync"); if(!el) return;
