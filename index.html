@@ -159,7 +159,7 @@ dialog#visor::backdrop{background:rgba(0,0,0,.55)}
 <header>
   <h1>Control de Reportes de Lectura</h1>
   <p>Biblioteca Viva · Ciclo 2026-2027 · Uso interno del docente</p>
-  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7.7 · formato usado y revisión de la Ronda 1</span>
+  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7.8 · apartados de la Ronda 2</span>
 </header>
 <nav id="nav" aria-label="Secciones">
   <button data-view="panel" aria-current="page">Panel</button>
@@ -176,17 +176,26 @@ dialog#visor::backdrop{background:rgba(0,0,0,.55)}
 "use strict";
 /* ============================================================
    CONFIGURACIÓN PEDAGÓGICA
-   Apartados por grado: tomados de «Formatos_Reporte_de_Lectura_Cuaderno_1-6»
-   (Biblioteca Viva 2026-2027). El apartado 0 es el encabezado que todos copian.
+   Apartados por grado. Ronda 1: «Formatos_Reporte_de_Lectura_Cuaderno_1-6»; con ellos se valoraron
+   los reportes hechos con el formato de grado (3A-08, 3A-10, 6A-17). Ronda 2 en adelante: guías nuevas,
+   con el mismo número de apartados por grado. El apartado 0 es el encabezado que todos copian.
    ============================================================ */
 const GRUPOS = ["1°A","2°A","3°A","4°A","5°A","6°A"];
-const SECCIONES = {
+const SECCIONES_R1 = {
   1:["Encabezado (n.º y fecha)","Título del cuento","Mi dibujo","¿Qué pasó?","¿Me gustó? (carita)"],
   2:["Encabezado (n.º y fecha)","Título y autor","Personajes","Al principio…","Al final…","Mi dibujo","¿Me gustó? ¿Por qué?"],
   3:["Encabezado (n.º y fecha)","Título y autor","Personajes principales","¿Dónde y cuándo pasa?","¿Qué pasó?","Una pista y lo que descubrí","Una palabra nueva","Mi opinión"],
   4:["Encabezado (n.º y fecha)","Título y autor","Personajes principales","¿Dónde y cuándo pasa?","Resumen","¿Por qué el personaje actuó así?","Una palabra nueva","Mi opinión"],
   5:["Encabezado (n.º y fecha)","Ficha del libro","Resumen en mis propias palabras","¿Qué mueve a los personajes?","¿Qué mensaje quiso dejar el autor?","Mi opinión con una razón","Lo conecto con mi vida o con el mundo"],
   6:["Encabezado (n.º y fecha)","Ficha del libro","Resumen en mis propias palabras","Análisis de un personaje","Lo que el texto no dice pero yo deduzco","Mi postura, con argumentos","¿Se parece a otro libro que he leído?","¿A quién se lo recomendaría y por qué?"]
+};
+const SECCIONES = {
+  1:["Encabezado (n.º y fecha)","Título del libro","Mi dibujo","¿Qué pasó? o ¿Qué aprendí?","Mi semáforo y lo que más me gustó"],
+  2:["Encabezado (n.º y fecha)","Título y autor","Personajes o tema","Al principio…","Al final…","Mi dibujo","Me gustó porque…"],
+  3:["Encabezado (n.º y fecha)","Título y autor","Personajes o tema","¿Dónde y cuándo? o Tres cosas que aprendí","¿Qué pasó? o Mi página favorita","Una pista y lo que descubrí","Una palabra nueva","Mi opinión"],
+  4:["Encabezado (n.º y fecha)","Título y autor","Personajes o tema","¿Dónde y cuándo? o Tres cosas que aprendí","Resumen","Lo que deduzco, con su pista","Una palabra nueva","Mi opinión"],
+  5:["Encabezado (n.º y fecha)","Ficha del libro","Resumen o ideas principales","Lo que deduzco, con su pista","¿Qué quiso decirnos el autor?","Mi opinión y a quién se lo recomiendo","Lo conecto con mi vida o con el mundo"],
+  6:["Encabezado (n.º y fecha)","Ficha del libro","Resumen o ideas principales","Un personaje o un tema a fondo","Lo que el texto no dice, pero yo deduzco","Mi postura, con argumentos","¿Se parece a otro libro que he leído?","¿A quién se lo recomendaría y por qué?"]
 };
 const banda = g => g<=2 ? "A" : g<=4 ? "B" : "C";
 const NIVELES = ["Inicio","En camino","Logrado","Va más allá"];
@@ -400,7 +409,7 @@ function seccionesDe(alumnoId, rondaId){
   const g = perfilDe(alumnoId)?.guia;
   const usaGrado = registroDe(alumnoId, rondaId)?.formato==="grado";
   if(!usaGrado && g && g.ronda===rondaId && g.apartados?.length) return [{titulo:"Encabezado (n.º y fecha)",indicacion:""}, ...g.apartados];
-  return SECCIONES[gradoDe(alumnoPorId(alumnoId)?.grupo||"1")].map(t=>({titulo:t,indicacion:""}));
+  return (rondaId==="R1" ? SECCIONES_R1 : SECCIONES)[gradoDe(alumnoPorId(alumnoId)?.grupo||"1")].map(t=>({titulo:t,indicacion:""}));
 }
 function completitud(reg){
   const n = seccionesDe(reg.alumnoId, reg.ronda).length; let suma=0, marcadas=0;
@@ -1706,7 +1715,7 @@ async function docInforme(){
     if(conRev.length) b.push(
       {t:"grafica", spec:{tipo:"simple", categorias:conRev.map(x=>x.g), max:100, sufijo:"%", series:[{nombre:"Completitud media", color:HEX_MARCA, valores:conRev.map(x=>Math.round(prom(x.comp)))}]}},
       {t:"tabla", cab:["Grupo","Reportes revisados","Completitud media","Mínima","Máxima"], filas:conRev.map(x=>[x.g, x.comp.length, Math.round(prom(x.comp))+"%", Math.min(...x.comp)+"%", Math.max(...x.comp)+"%"])},
-      {t:"p", x:"«Completo» vale 2, «En construcción» 1 y «Aún no aparece» 0; el porcentaje compara lo presente con el porcentaje compara lo presente con los apartados revisados del formato que usó cada alumno (su guía o el formato de su grado); las páginas sin fotografía no cuentan y se señalan como «por revisar» en la ficha.", tenue:true});
+      {t:"p", x:"«Completo» vale 2, «En construcción» 1 y «Aún no aparece» 0; el porcentaje compara lo presente con los apartados revisados del formato que usó cada alumno (su guía o el formato de su grado); las páginas sin fotografía no cuentan y se señalan como «por revisar» en la ficha.", tenue:true});
     else b.push({t:"p", x:"Todavía no hay reportes revisados.", tenue:true});
     b.push({t:"h2", x:"3. Calidad por dimensión y grupo"}, ...bloquesCalidad(est));
     if(revisados.length){

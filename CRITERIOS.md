@@ -33,7 +33,23 @@ Ronda 1: límite **09/10/2026**, extemporáneo hasta **12/10/2026**, **por únic
 
 ## Apartados por grado
 
-Tomados de «Formatos_Reporte_de_Lectura_Cuaderno_1-6».
+### Ronda 2 en adelante (guías nuevas)
+
+**1.°** — Encabezado (n.º y fecha) · Título del libro · Mi dibujo · ¿Qué pasó? o ¿Qué aprendí? · Mi semáforo y lo que más me gustó
+
+**2.°** — Encabezado (n.º y fecha) · Título y autor · Personajes o tema · Al principio… · Al final… · Mi dibujo · Me gustó porque…
+
+**3.°** — Encabezado (n.º y fecha) · Título y autor · Personajes o tema · ¿Dónde y cuándo? o Tres cosas que aprendí · ¿Qué pasó? o Mi página favorita · Una pista y lo que descubrí · Una palabra nueva · Mi opinión
+
+**4.°** — Encabezado (n.º y fecha) · Título y autor · Personajes o tema · ¿Dónde y cuándo? o Tres cosas que aprendí · Resumen · Lo que deduzco, con su pista · Una palabra nueva · Mi opinión
+
+**5.°** — Encabezado (n.º y fecha) · Ficha del libro · Resumen o ideas principales · Lo que deduzco, con su pista · ¿Qué quiso decirnos el autor? · Mi opinión y a quién se lo recomiendo · Lo conecto con mi vida o con el mundo
+
+**6.°** — Encabezado (n.º y fecha) · Ficha del libro · Resumen o ideas principales · Un personaje o un tema a fondo · Lo que el texto no dice, pero yo deduzco · Mi postura, con argumentos · ¿Se parece a otro libro que he leído? · ¿A quién se lo recomendaría y por qué?
+
+### Ronda 1 (formato de cuaderno original)
+
+Tomados de «Formatos_Reporte_de_Lectura_Cuaderno_1-6». Se conservan porque con ellos se valoraron los reportes hechos con el formato de grado (3A-08, 3A-10 y 6A-17).
 
 **1.°** — Encabezado (n.º y fecha) · Título del cuento · Mi dibujo · ¿Qué pasó? · ¿Me gustó? (carita)
 
@@ -115,9 +131,10 @@ La observación es interna y nunca sale en las exportaciones sin nombres. Se esc
 
 1. **Páginas sin fotografía.** Un apartado que no se fotografió queda «Sin marcar» y no cuenta en la completitud. El porcentaje se calcula solo con lo revisado y la ficha dice cuántos apartados faltan por revisar en el cuaderno.
 2. **Formato usado.** Cada reporte se valora con lo que el alumno realmente usó: su guía personalizada o el formato de cuaderno de su grado. En la Ronda 1, tres alumnos usaron la plantilla de su grado.
-3. **D3 y la guía.** Si la guía del alumno no pedía la pista con página, D3 queda «Sin evidencia» y se lee como un pendiente de la guía, no del alumno. Desde la Ronda 2 todas las guías de 3.° a 6.° piden ese paso.
+3. **D3 y la guía.** Si la guía del alumno no pedía la pista con página, D3 queda «Sin evidencia» y se lee como un pendiente de la guía, no del alumno.
 4. **D4 en 1.°.** Si la guía solo pide colorear el semáforo, el reporte llega como máximo al nivel 2. Para el nivel 3 la guía debe pedir también el dibujo de lo que más le gustó (o «Me gustó porque…», dictado).
 5. **Material impreso o hecho por un adulto.** Una lámina impresa, una imagen descargada o un dibujo hecho por un adulto no cuentan como decisión propia en D5; se registran como acompañamiento de la familia.
 6. **Forma de producción.** Se deja en «Sin dato» hasta verla. Si la letra es de un adulto se anota «dictado» o «mixto». En 1.° a 3.° la guía permitía ese apoyo y no resta.
 7. **Libro distinto al de la ruta.** Si el reporte trata de otro texto, se marca «de ruta: no» y se conversa con el alumno; no se valora como si fuera su libro.
 8. **Recrear no es resumir.** Una versión inventada de la historia es mérito de D5, pero no sustituye al resumen de D2.
+9. **Guías de la Ronda 2.** Desde la Ronda 2 todas las guías de 3.° a 6.° piden la pista con página, y la de 1.° pide el dibujo de lo que más le gustó.
