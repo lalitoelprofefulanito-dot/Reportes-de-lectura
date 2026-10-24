@@ -398,13 +398,14 @@ function conteoSituacion(ronda, grupo){
 /* Apartados que se revisan: los de la guía personalizada si existe para esa ronda; si no, los del formato del grado. */
 function seccionesDe(alumnoId, rondaId){
   const g = perfilDe(alumnoId)?.guia;
-  if(g && g.ronda===rondaId && g.apartados?.length) return [{titulo:"Encabezado (n.º y fecha)",indicacion:""}, ...g.apartados];
+  const usaGrado = registroDe(alumnoId, rondaId)?.formato==="grado";
+  if(!usaGrado && g && g.ronda===rondaId && g.apartados?.length) return [{titulo:"Encabezado (n.º y fecha)",indicacion:""}, ...g.apartados];
   return SECCIONES[gradoDe(alumnoPorId(alumnoId)?.grupo||"1")].map(t=>({titulo:t,indicacion:""}));
 }
 function completitud(reg){
   const n = seccionesDe(reg.alumnoId, reg.ronda).length; let suma=0, marcadas=0;
   for(let i=0;i<n;i++){ const v = reg.secciones?.[i]; if(v!==undefined && v!==null){ suma+=v; marcadas++; } }
-  return marcadas ? Math.round(100*suma/(2*n)) : null;
+  return marcadas ? Math.round(100*suma/(2*marcadas)) : null;
 }
 /* Llena el libro (de la ruta) y el n.º de reporte en los registros que aún no los tienen. */
 function autocompletarLibros(){
@@ -688,6 +689,7 @@ function vistaRegistrar(){
     <label>Folio BV<input type="text" style="width:110px" placeholder="BV-0000" value="${esc(r.libro?.folio||"")}" onchange="campoLibro('folio',this.value)"></label>
     <label>¿De su ruta lectora?<select onchange="campoLibro('deRuta',this.value)"><option value="">Sin dato</option><option value="si" ${r.libro?.deRuta==="si"?"selected":""}>Sí</option><option value="no" ${r.libro?.deRuta==="no"?"selected":""}>No, lo eligió fuera de la ruta</option></select></label>
   </div>
+  <h3>¿Con qué formato lo hizo?</h3>${seg("fmt", [["","Su guía personalizada"],["grado","El formato de cuaderno de su grado"]], r.formato||"", "campo('formato',this.value)")}
   <h3>¿Cómo se produjo?</h3>${seg("prod", Object.entries(PRODUCCION), r.produccion||"", "campo('produccion',this.value)")}
   <p class="muted" style="font-size:.82rem">Dictar o contar en voz alta es una vía válida de expresión (DUA). Se registra para leer bien los datos, no para restar.</p>
   </section>`;
@@ -713,7 +715,7 @@ function vistaRegistrar(){
   return html;
 }
 function regActual(){ return obtenerRegistro(edicion.alumnoId, rondaSel().id); }
-function campo(k,v){ const r=regActual(); r[k]=v; tocar(r); if(["fechaRecepcion","produccion","limitePropio"].includes(k)) render(); }
+function campo(k,v){ const r=regActual(); r[k]=v; tocar(r); if(["fechaRecepcion","produccion","limitePropio","formato"].includes(k)) render(); }
 function campoLibro(k,v){ const r=regActual(); r.libro = r.libro||{}; r.libro[k]=v; tocar(r); }
 function seccion(i,v){ const r=regActual(); r.secciones=r.secciones||{}; r.secciones[i]=Number(v); tocar(r); render(); }
 function dimension(id,v){ const r=regActual(); r.dimensiones=r.dimensiones||{}; if(v) r.dimensiones[id]=Number(v); else delete r.dimensiones[id]; tocar(r); render(); }
@@ -733,7 +735,10 @@ function vistaCriterios(){
   </ol>
   <p>La quinta dimensión, <b>Lo hace suyo</b>, existe porque los reportes son personales. Un dibujo que explica, una conexión con el videojuego que más le gusta o una carta al personaje son decisiones que dicen mucho de cómo se está apropiando de la lectura. Se registran como casillas para poder contarlas y graficarlas sin nombres.</p>
   <p>La forma de producción (escrito, dictado, mixto, oral) se anota y no resta. En 1.° y 2.° el formato permite dictar; en cualquier grado, un alumno que dicta sigue mostrando comprensión. Anotarlo evita leer mal los datos después.</p>
-  <p>«Sin evidencia» es distinto de «Inicio». Si el reporte no trae el apartado de la pista, la dimensión D3 queda sin evidencia: lo que falta se ve en completitud y no se convierte en un nivel bajo.</p>
+  <p>«Sin evidencia» es distinto de «Inicio». Si el reporte no trae el apartado de la pista, la dimensión D3 queda sin evidencia: lo que falta se ve en completitud y no se convierte en un nivel bajo. Si la guía del alumno no pedía ese paso, D3 no se lee como carencia del alumno sino de la guía.</p>
+  <p>Una página que no se fotografió queda «Sin marcar» y no cuenta en la completitud: el porcentaje se calcula solo con lo revisado y la ficha indica cuántos apartados faltan por revisar en el cuaderno.</p>
+  <p>Cada reporte puede valorarse con la guía personalizada o con el formato de cuaderno de su grado, según lo que el alumno haya usado.</p>
+  <p>Una lámina impresa, descargada o hecha por un adulto no cuenta como decisión propia en D5; sí se registra como acompañamiento de la familia. La forma de producción se deja en «Sin dato» hasta verla: la letra de un adulto se anota como dictado o mixto y no resta.</p>
   <p>Los niveles describen el reporte de una ronda. Al comparar rondas se ve el avance, y cuando una misma necesidad se repite, el siguiente paso propone conversar con la familia o revisar con el equipo especialista: casa, escuela y especialistas mirando el mismo dato.</p>
   </section>
   <section class="card"><h2>Estados de entrega</h2><table><tbody>
@@ -1387,7 +1392,7 @@ function moverVisor(d){ const c = clavesAncla(V.alumnoId, V.rondaId); const i = 
 
 /* ---------- importar paquete de evidencias ---------- */
 async function importarEvidencias(d){
-  S.fotosMeta = S.fotosMeta || {}; let nf = 0, nr = 0, omit = [];
+  S.fotosMeta = S.fotosMeta || {}; let nf = 0, nr = 0, omit = [], fechasRespetadas = 0;
   aviso("Importando fotos…");
   for(const f of d.fotos || []){
     if(!(await fotoGet(f.id).catch(()=>null))){ await fotoPut({id:f.id, blob:new Blob([b64(f.jpg)], {type:"image/jpeg"}), pendiente:true}); nf++; }
@@ -1400,7 +1405,11 @@ async function importarEvidencias(d){
     for(const [k, v] of Object.entries(n)){
       if(k==="alumnoId" || k==="ronda") continue;
       if(k==="evidencias") r.evidencias = [...new Set([...(r.evidencias||[]), ...v])];
-      else if(k==="secciones" || k==="dimensiones" || k==="anclas"){
+      else if(k==="anclas"){
+        /* cada zona se combina campo por campo: un paquete puede corregir el texto sin borrar el recuadro */
+        const m = {...(r.anclas||{})}; Object.entries(v||{}).forEach(([x,z])=>{ if(z===null) delete m[x]; else m[x] = {...(m[x]||{}), ...z}; }); r.anclas = m; }
+      else if(["fechaRecepcion","libroDevuelto","limitePropio"].includes(k) && r[k] && r[k]!==v && !d.forzarFechas){ fechasRespetadas++; }
+      else if(k==="secciones" || k==="dimensiones"){
         /* null en el paquete = borrar esa valoración o esa zona (queda «Sin marcar») */
         const m = {...(r[k]||{}), ...v}; Object.keys(m).forEach(x=>{ if(m[x]===null) delete m[x]; }); r[k] = m; }
       else r[k] = v;
@@ -1408,7 +1417,7 @@ async function importarEvidencias(d){
     tocar(r); nr++;
   }
   autocompletarLibros(); guardar(); render();
-  aviso(`${nf} fotos nuevas · ${nr} reportes actualizados${omit.length ? ` · ${omit.length} omitidos` : ""}`);
+  aviso(`${nf} fotos nuevas · ${nr} reportes actualizados${omit.length ? ` · ${omit.length} omitidos` : ""}${fechasRespetadas ? ` · ${fechasRespetadas} fechas ya capturadas se respetaron` : ""}`);
 }
 
 /* ---------- fotos anotadas para exportar ---------- */
@@ -1615,9 +1624,9 @@ async function bloquesReporte(alumnoId, ronda, nivel){
     ["Fecha límite", fmtFecha(Lim.limite) + (Lim.origen==="acordada" ? " (acordada)" : Lim.propia ? " (marcada en su guía)" : ""), "Cómo se produjo", PRODUCCION[r.produccion] || "Sin dato"],
     ...(P ? [["Lo que más le gusta", (P.intereses||[]).join(" · "), "Formato favorito", P.formato || "—"]] : [])]});
   const secs = seccionesDe(alumnoId, ronda.id); const comp = completitud(r);
-  b.push({t:sub, x:G ? "Apartados de su guía personalizada" : `Apartados del formato de ${grado}.°`},
+  b.push({t:sub, x:G && r.formato!=="grado" ? "Apartados de su guía personalizada" : `Apartados del formato de ${grado}.°`},
     {t:"tabla", cab:["","Apartado","Valoración","Lo que se observa"], filas:secs.map((s,i)=>[i===0?"E":String(i), s.titulo, VALORACION[r.secciones?.[i]] ?? "Sin marcar", an["s"+i]?.razon || "—"])},
-    {t:"p", tenue:true, x:`Apartados presentes: ${comp===null ? "sin valorar" : comp+" %"}. E = encabezado; los números corresponden a los apartados de su guía.`});
+    {t:"p", tenue:true, x:`Apartados presentes: ${comp===null ? "sin valorar" : comp+" % de lo revisado"}${(()=>{ const f = secs.filter((_,i)=>r.secciones?.[i]===undefined || r.secciones?.[i]===null).length; return f ? ` (${f} por revisar en el cuaderno)` : ""; })()}. E = encabezado; los números corresponden a los apartados de ${r.formato==="grado" ? "su formato de grado" : "su guía"}.`});
   b.push({t:sub, x:"Lo que muestra su lectura"}, {t:"tabla", cab:["Dimensión","Nivel","Lo que se observa"], filas:DIMENSIONES.map(d=>{
     if(!dimAplica(d, grado)) return [`${d.id} · ${d.nombre}`, "No aplica", `En ${grado}.° el formato todavía no pide este paso.`];
     const v = r.dimensiones?.[d.id];

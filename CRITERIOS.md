@@ -109,3 +109,15 @@ Tomados de «Formatos_Reporte_de_Lectura_Cuaderno_1-6».
 ## Observaciones
 
 La observación es interna y nunca sale en las exportaciones sin nombres. Se escribe en lenguaje situacional: qué se ve, en qué apartado, con qué apoyo. La aplicación avisa cuando una frase parece describir un rasgo fijo («es distraído», «no le interesa leer»).
+
+
+## Ajustes después de revisar la Ronda 1 (24/10/2026)
+
+1. **Páginas sin fotografía.** Un apartado que no se fotografió queda «Sin marcar» y no cuenta en la completitud. El porcentaje se calcula solo con lo revisado y la ficha dice cuántos apartados faltan por revisar en el cuaderno.
+2. **Formato usado.** Cada reporte se valora con lo que el alumno realmente usó: su guía personalizada o el formato de cuaderno de su grado. En la Ronda 1, tres alumnos usaron la plantilla de su grado.
+3. **D3 y la guía.** Si la guía del alumno no pedía la pista con página, D3 queda «Sin evidencia» y se lee como un pendiente de la guía, no del alumno. Desde la Ronda 2 todas las guías de 3.° a 6.° piden ese paso.
+4. **D4 en 1.°.** Si la guía solo pide colorear el semáforo, el reporte llega como máximo al nivel 2. Para el nivel 3 la guía debe pedir también el dibujo de lo que más le gustó (o «Me gustó porque…», dictado).
+5. **Material impreso o hecho por un adulto.** Una lámina impresa, una imagen descargada o un dibujo hecho por un adulto no cuentan como decisión propia en D5; se registran como acompañamiento de la familia.
+6. **Forma de producción.** Se deja en «Sin dato» hasta verla. Si la letra es de un adulto se anota «dictado» o «mixto». En 1.° a 3.° la guía permitía ese apoyo y no resta.
+7. **Libro distinto al de la ruta.** Si el reporte trata de otro texto, se marca «de ruta: no» y se conversa con el alumno; no se valora como si fuera su libro.
+8. **Recrear no es resumir.** Una versión inventada de la historia es mérito de D5, pero no sustituye al resumen de D2.
