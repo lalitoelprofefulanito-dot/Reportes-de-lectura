@@ -40,7 +40,7 @@ El archivo `.gitignore` ya bloquea esos nombres, pero conviene revisar antes de 
 
 1. Abra la dirección de su página.
 2. Escriba la contraseña de las listas y pulse **Abrir listas**. Se abre directamente **Entregas por grupo**.
-3. Calendario de rondas (pestaña **Rondas y lista**). La **Ronda 1** tuvo límite 09/10/2026 y extemporáneo hasta el lunes 12/10/2026, por única ocasión. Desde la **Ronda 2** el libro se presta en lunes, se recibe el viernes de la tercera semana y todos tienen **una semana más de prórroga**. La siguiente ronda empieza el primer lunes hábil después de la fecha límite:
+3. Calendario de rondas (pestaña **Rondas y lista**). La **Ronda 1** tuvo límite 09/10/2026 y extemporáneo hasta el lunes 12/10/2026, por única ocasión. Desde la **Ronda 2** el libro se presta en lunes, el reporte y el libro se reciben juntos el viernes de la tercera semana (si ese viernes no hay clases, el último día hábil anterior) y todos tienen **una semana más de prórroga**. La siguiente ronda empieza el primer lunes hábil después de la fecha límite:
 
    | Ronda | Préstamo | Fecha límite | Prórroga hasta |
    |---|---|---|---|
@@ -48,7 +48,7 @@ El archivo `.gitignore` ya bloquea esos nombres, pero conviene revisar antes de 
    | 3 | lun 23/11/2026 (el 16/11 es descanso obligatorio) | vie 11/12/2026 | vie 18/12/2026 |
    | 4 | lun 14/12/2026 | vie 15/01/2027 (tercera semana de clases, contando las vacaciones del 21/12 al 5/01) | vie 22/01/2027 |
    | 5 | lun 18/01/2027 | vie 05/02/2027 | vie 12/02/2027 |
-   | 6 | lun 08/02/2027 | vie 26/02/2027 | vie 05/03/2027 |
+   | 6 | lun 08/02/2027 | jue 25/02/2027 (el viernes 26/02 es Consejo Técnico) | vie 05/03/2027 |
 
    Si un navegador ya tenía las fechas anteriores, la app las cambia por estas una sola vez al abrirla. Después pueden corregirse a mano en esa pestaña. «Agregar ronda» usa la misma regla.
 4. En **Entregas por grupo**, marque cada cuaderno con **Recibido hoy** o escriba la fecha en que lo recibió.

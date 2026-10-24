@@ -293,16 +293,18 @@ const KEY = "reportes_lectura_molino_v1";
    Desde la Ronda 2 (calendario 2, 24/10/2026): el libro se presta en lunes, se recibe el viernes de la
    tercera semana y todos tienen una semana más de prórroga («extemporaneo» = límite + 7 días).
    La siguiente ronda empieza el primer lunes hábil después de la fecha límite
-   (16/11/2026 es descanso obligatorio; vacaciones del 21/12/2026 al 5/01/2027). */
+   (16/11/2026 es descanso obligatorio; vacaciones del 21/12/2026 al 5/01/2027).
+   Calendario 3 (24/10/2026): el libro se devuelve junto con el reporte; si el viernes límite no hay clases,
+   la entrega pasa al último día hábil anterior (Ronda 6: el 26/02/2027 es Consejo Técnico, límite jueves 25/02/2027). */
 const RONDAS_INICIALES = [
   {id:"R1",nombre:"Ronda 1",inicio:"2026-09-28",limite:"2026-10-09",extemporaneo:"2026-10-12",extemporaneoUnico:true},
   {id:"R2",nombre:"Ronda 2",inicio:"2026-10-26",limite:"2026-11-13",extemporaneo:"2026-11-20",extemporaneoUnico:false},
   {id:"R3",nombre:"Ronda 3",inicio:"2026-11-23",limite:"2026-12-11",extemporaneo:"2026-12-18",extemporaneoUnico:false},
   {id:"R4",nombre:"Ronda 4",inicio:"2026-12-14",limite:"2027-01-15",extemporaneo:"2027-01-22",extemporaneoUnico:false},
   {id:"R5",nombre:"Ronda 5",inicio:"2027-01-18",limite:"2027-02-05",extemporaneo:"2027-02-12",extemporaneoUnico:false},
-  {id:"R6",nombre:"Ronda 6",inicio:"2027-02-08",limite:"2027-02-26",extemporaneo:"2027-03-05",extemporaneoUnico:false}
+  {id:"R6",nombre:"Ronda 6",inicio:"2027-02-08",limite:"2027-02-25",extemporaneo:"2027-03-05",extemporaneoUnico:false}
 ];
-const CALENDARIO = 2;
+const CALENDARIO = 3;
 function estadoVacio(){ return {version:2, calendario:CALENDARIO, roster:[], perfiles:null, rondas:structuredClone(RONDAS_INICIALES), registros:[], borrados:[], fotosMeta:{}, ultimoRespaldo:null}; }
 let S;
 function cargar(){
