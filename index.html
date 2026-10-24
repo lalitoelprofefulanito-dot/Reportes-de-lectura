@@ -1706,7 +1706,7 @@ async function docInforme(){
     if(conRev.length) b.push(
       {t:"grafica", spec:{tipo:"simple", categorias:conRev.map(x=>x.g), max:100, sufijo:"%", series:[{nombre:"Completitud media", color:HEX_MARCA, valores:conRev.map(x=>Math.round(prom(x.comp)))}]}},
       {t:"tabla", cab:["Grupo","Reportes revisados","Completitud media","Mínima","Máxima"], filas:conRev.map(x=>[x.g, x.comp.length, Math.round(prom(x.comp))+"%", Math.min(...x.comp)+"%", Math.max(...x.comp)+"%"])},
-      {t:"p", x:"«Completo» vale 2, «En construcción» 1 y «Aún no aparece» 0; el porcentaje compara lo presente con el total de apartados de su guía.", tenue:true});
+      {t:"p", x:"«Completo» vale 2, «En construcción» 1 y «Aún no aparece» 0; el porcentaje compara lo presente con el porcentaje compara lo presente con los apartados revisados del formato que usó cada alumno (su guía o el formato de su grado); las páginas sin fotografía no cuentan y se señalan como «por revisar» en la ficha.", tenue:true});
     else b.push({t:"p", x:"Todavía no hay reportes revisados.", tenue:true});
     b.push({t:"h2", x:"3. Calidad por dimensión y grupo"}, ...bloquesCalidad(est));
     if(revisados.length){
