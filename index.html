@@ -131,6 +131,14 @@ button.btn:disabled{opacity:.45;cursor:not-allowed}
 .evidfila{display:flex;flex-direction:column;align-items:flex-start;gap:4px;margin-top:6px}
 .evidfila .evidtxt{text-align:left}
 .miniaturas{display:flex;gap:10px;overflow-x:auto;padding:4px 0}
+.soltar{border:2px dashed var(--line);border-radius:var(--radius);padding:18px;text-align:center;margin-top:10px}
+.soltar.activa{border-color:var(--brand);background:var(--brand-soft)}
+.bandeja{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:10px}
+.bandeja figure{margin:0;border:1px solid var(--line);border-radius:var(--radius);padding:8px;display:flex;flex-direction:column;gap:6px}
+.bandeja figure>img{width:100%;height:220px;object-fit:contain;background:var(--pend-bg);border-radius:6px;cursor:zoom-in}
+.bandeja .libro img{width:48px;height:auto;max-height:70px}
+.bandeja .libro{display:flex;gap:8px;align-items:center}
+.bandeja select,.bandeja input[type=date]{width:100%}
 .miniaturas figure{margin:0;width:120px;flex:0 0 auto;font-size:.74rem}
 .mini{padding:0;border:1px solid var(--line);border-radius:6px;background:var(--pend-bg);cursor:pointer;width:120px;height:120px;overflow:hidden;display:block}
 .mini img{width:100%;height:100%;object-fit:cover;display:block}
@@ -159,11 +167,12 @@ dialog#visor::backdrop{background:rgba(0,0,0,.55)}
 <header>
   <h1>Control de Reportes de Lectura</h1>
   <p>Biblioteca Viva · Ciclo 2026-2027 · Uso interno del docente</p>
-  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 7.8 · apartados de la Ronda 2</span>
+  <span id="sync" class="sync" role="status">Guardado solo en este equipo</span> <span class="sync" title="Versión de la aplicación">Versión 8.0 · propuestas de Claude con fotos</span>
 </header>
 <nav id="nav" aria-label="Secciones">
   <button data-view="panel" aria-current="page">Panel</button>
   <button data-view="grupos">Entregas por grupo</button>
+  <button data-view="fotos">Recibir fotos</button>
   <button data-view="registrar">Revisar reporte</button>
   <button data-view="criterios">Criterios</button>
   <button data-view="datos">Exportar y respaldos</button>
@@ -847,6 +856,7 @@ async function importarJSON(f){
   if(!f) return;
   let d; try{ d=JSON.parse(await leerArchivo(f)); }catch(e){ return aviso("El archivo no es un JSON válido"); }
   if(d.tipo==="roster_privado"){ return aplicarRoster(d.alumnos); }
+  if(d.tipo==="propuesta_reportes_lectura" && Array.isArray(d.registros)){ return recibirPropuesta(d); }
   if(d.tipo==="evidencias_reporte_lectura" || (Array.isArray(d.fotos) && Array.isArray(d.registros) && d.registros.some(r=>r.anclas))){ return importarEvidencias(d); }
   if(d.version && Array.isArray(d.registros) && Array.isArray(d.roster)){
     if(!confirm(`Respaldo con ${d.roster.length} alumnos y ${d.registros.length} registros.\nAceptar = reemplazar todo lo actual.\nCancelar = combinar con lo actual.`)){ combinar(d.registros, d.rondas); return; }
@@ -1271,13 +1281,18 @@ async function comprimirFoto(file){
   const blob = await new Promise(ok=>cv.toBlob(ok, "image/jpeg", 0.8));
   return {blob, w:cv.width, h:cv.height};
 }
+/* Comprime la foto y la guarda en este equipo. «pendiente» = se sube a GitHub en la siguiente sincronización. */
+async function guardarFoto(file, pendiente){
+  const {blob, w, h} = await comprimirFoto(file); const id = "ev-" + uid();
+  await fotoPut({id, blob, pendiente});
+  return {id, nombre:file.name || `Foto ${fechaHora()}`, w, h};
+}
 async function agregarFotos(alumnoId, rondaId, archivos){
   const r = obtenerRegistro(alumnoId, rondaId); r.evidencias = r.evidencias || []; S.fotosMeta = S.fotosMeta || {};
   let n = 0;
   for(const file of archivos){
-    try{ const {blob, w, h} = await comprimirFoto(file); const id = "ev-" + uid();
-      await fotoPut({id, blob, pendiente:true});
-      S.fotosMeta[id] = {nombre:file.name, w, h}; r.evidencias.push(id); n++;
+    try{ const f = await guardarFoto(file, true);
+      S.fotosMeta[f.id] = {nombre:f.nombre, w:f.w, h:f.h}; r.evidencias.push(f.id); n++;
     }catch(e){ aviso(e.message); }
   }
   if(!r.fotos) r.fotos = archivos.length ? [...archivos].map(f=>f.name).join(", ") : "";
@@ -1323,7 +1338,8 @@ function lineaEvidencia(alumnoId, rondaId, r, k){
 function tarjetaEvidencias(alumnoId, rondaId, r){
   const evs = r.evidencias || [];
   return `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Evidencias del reporte</h2>
-    <label class="btnfoto">📷 Agregar fotografías<input type="file" accept="image/*" multiple class="hidden" onchange="agregarFotos('${alumnoId}','${rondaId}',[...this.files]);this.value=''"></label></div>
+    <div class="row" style="gap:6px"><label class="btnfoto">📷 Tomar foto<input type="file" accept="image/*" capture="environment" class="hidden" onchange="agregarFotos('${alumnoId}','${rondaId}',[...this.files]);this.value=''"></label>
+    <label class="btnfoto">🖼️ Elegir fotografías<input type="file" accept="image/*" multiple class="hidden" onchange="agregarFotos('${alumnoId}','${rondaId}',[...this.files]);this.value=''"></label></div></div>
     <p class="muted" style="font-size:.84rem;margin:6px 0">Toque una foto para verla con las zonas marcadas. En cada apartado y dimensión, «📷 Evidencia» muestra dónde está en la foto lo que se valoró, qué se lee ahí y por qué se registró así; ahí mismo puede marcar o corregir la zona.</p>
     ${evs.length ? `<div class="miniaturas">${evs.map(id=>{
       const n = Object.values(r.anclas||{}).filter(a=>a.foto===id).length;
@@ -1331,6 +1347,167 @@ function tarjetaEvidencias(alumnoId, rondaId, r){
         <figcaption>${esc(nombreFoto(id))}<br><span class="muted">${n} zona(s)</span> · <a href="#" onclick="quitarFoto('${alumnoId}','${rondaId}','${id}');return false">quitar</a></figcaption></figure>`; }).join("")}</div>`
       : `<p class="muted">Todavía no hay fotos de este reporte.</p>`}
   </section>`;
+}
+
+/* ---------- recibir fotos (bandeja) ----------
+   Las fotos llegan a una bandeja de este equipo (celular o computadora). Cada una se asigna a un alumno
+   y se indica si es una página del reporte, la portada del libro devuelto o ambas. Al asignarla pasa a
+   las evidencias de su reporte y, si se pide, registra la fecha del reporte o del libro sin borrar una ya capturada. */
+const TIPOS_FOTO = {reporte:"Página del reporte", libro:"Portada del libro devuelto", ambos:"Reporte y libro en la misma foto"};
+let soltarListo = false;
+async function recibirFotos(archivos){
+  archivos = [...archivos].filter(f=>f.type.startsWith("image/") || /\.(jpe?g|png|webp|heic)$/i.test(f.name||""));
+  if(!archivos.length) return;
+  S.bandeja = S.bandeja || []; let n = 0;
+  aviso("Guardando fotos…");
+  for(const file of archivos){
+    try{ const f = await guardarFoto(file, false);
+      S.bandeja.push({...f, llegada:hoy(), grupo:filtroGrupo, alumnoId:"", tipo:"reporte", fecha:hoy(), marcarFecha:true}); n++;
+    }catch(e){ aviso(e.message); }
+  }
+  guardarLocal(); render(); if(n) aviso(`${n} foto(s) en la bandeja`);
+}
+function editarBandeja(id, k, v){
+  const b = (S.bandeja||[]).find(x=>x.id===id); if(!b) return;
+  b[k] = v; if(k==="grupo") b.alumnoId = "";
+  guardarLocal(); if(k==="grupo" || k==="alumnoId" || k==="tipo") render();
+}
+async function asignarFoto(id){
+  const b = (S.bandeja||[]).find(x=>x.id===id); if(!b) return;
+  if(!b.alumnoId) return aviso("Elija primero al alumno");
+  const ronda = rondaSel(); const a = alumnoPorId(b.alumnoId);
+  const r = obtenerRegistro(b.alumnoId, ronda.id); r.evidencias = r.evidencias || []; S.fotosMeta = S.fotosMeta || {};
+  if(!r.evidencias.includes(id)) r.evidencias.push(id);
+  S.fotosMeta[id] = {nombre:b.nombre, w:b.w, h:b.h};
+  const notas = [];
+  if(b.marcarFecha && b.fecha){
+    if(b.tipo!=="libro"){ if(r.fechaRecepcion) notas.push(`el reporte ya tenía fecha (${fmtFecha(r.fechaRecepcion)})`); else r.fechaRecepcion = b.fecha; }
+    if(b.tipo!=="reporte"){ if(r.libroDevuelto) notas.push(`el libro ya tenía fecha (${fmtFecha(r.libroDevuelto)})`); else r.libroDevuelto = b.fecha; }
+  }
+  const f = await fotoGet(id).catch(()=>null); if(f) await fotoPut({...f, pendiente:true});
+  S.bandeja = S.bandeja.filter(x=>x.id!==id);
+  tocar(r); render();
+  aviso(`${a.grupo} n.º ${a.nl}: ${TIPOS_FOTO[b.tipo].toLowerCase()} agregada${notas.length ? " · se respetó la fecha: "+notas.join(" y ") : ""}`);
+}
+async function descartarFoto(id){
+  if(!confirm("¿Quitar esta foto de la bandeja? No se guarda en ningún reporte.")) return;
+  S.bandeja = (S.bandeja||[]).filter(x=>x.id!==id);
+  await idbOp("readwrite", st=>st.delete(id)).catch(()=>{});
+  const u = urlsFoto.get(id); if(u){ URL.revokeObjectURL(u); urlsFoto.delete(id); }
+  guardarLocal(); render();
+}
+/* ---------- propuesta de Claude (proyecto externo) ----------
+   Claude ve las fotos, pero no conoce sus id en la app: cada foto se cita por una referencia («foto 1»,
+   o el nombre del archivo). Aquí se vincula cada referencia con una foto de la bandeja; luego la propuesta
+   se aplica como un paquete de evidencias normal. Las fechas solo se registran si el alumno no las tiene. */
+const CAMPOS_PROPUESTA = ["numReporte","produccion","formato","estilo","secciones","dimensiones","personalizacion","siguiente","observacion","notaDocente","libro","anclas"];
+function recibirPropuesta(d){
+  if(d.ronda && !rondaPorId(d.ronda)) return aviso(`La propuesta es de la ronda «${d.ronda}», que no existe en la app`);
+  const band = S.bandeja || []; const norm = t => String(t||"").trim().toLowerCase();
+  d.registros.forEach(r=>{ r.vinculo = {}; (r.fotos||[]).forEach(f=>{ const b = band.find(x=>norm(x.nombre)===norm(f.ref)); r.vinculo[f.ref] = b ? b.id : ""; }); });
+  S.propuesta = {...d, fecha:hoy()}; guardarLocal();
+  if(d.ronda) rondaActiva = d.ronda;
+  ir("fotos"); aviso(`Propuesta con ${d.registros.length} alumno(s): vincule cada foto y pulse «Aplicar propuesta»`);
+}
+function vincularFoto(i, j, id){ const r = S.propuesta.registros[i]; r.vinculo[r.fotos[j].ref] = id; guardarLocal(); render(); }
+function marcarPropuesta(i, k, v){ S.propuesta.registros[i][k] = v; guardarLocal(); }
+function tarjetaPropuesta(){
+  const P = S.propuesta; if(!P) return "";
+  const band = S.bandeja || []; const usados = new Set(P.registros.flatMap(r=>Object.values(r.vinculo||{})).filter(Boolean));
+  const opc = (sel) => `<option value="">— elegir foto de la bandeja —</option>${band.map((b,k)=>`<option value="${b.id}" ${b.id===sel?"selected":""}>B${k+1} · ${esc(b.nombre)}${usados.has(b.id)&&b.id!==sel?" (ya vinculada)":""}</option>`).join("")}`;
+  return `<section class="card" style="border-color:var(--brand)"><h2>Propuesta de Claude por aplicar · ${esc(rondaPorId(P.ronda)?.nombre||P.ronda||"")}</h2>
+  <p class="muted">Para cada alumno, elija qué foto de la bandeja (B1, B2…) corresponde a cada foto que citó Claude. Si una foto todavía no está en la bandeja, súbala arriba. Revise la valoración en «Revisar reporte» después de aplicarla.</p>
+  ${P.registros.map((r,i)=>{ const a = alumnoPorId(r.alumnoId);
+    return `<div class="dim"><b>${a ? `${a.grupo} ${a.nl}. ${esc(a.nombre)}` : `⚠️ ${esc(r.alumnoId)} no está en la lista`}</b>${r.observacion?`<small class="ind">${esc(r.observacion.slice(0,180))}${r.observacion.length>180?"…":""}</small>`:""}
+      ${(r.fotos||[]).map((f,j)=>`<label style="margin-top:6px">${esc(f.ref)} · ${esc(f.muestra||"")}${f.describe?` · <span class="muted">${esc(f.describe)}</span>`:""}<select onchange="vincularFoto(${i},${j},this.value)">${opc(r.vinculo?.[f.ref])}</select></label>`).join("")}
+      <div class="row" style="gap:12px;margin-top:6px">
+        <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" ${r.entregaReporte?"checked":""} onchange="marcarPropuesta(${i},'entregaReporte',this.checked)"> Reporte recibido</label>
+        <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" ${r.libroDevuelto?"checked":""} onchange="marcarPropuesta(${i},'libroDevuelto',this.checked)"> Libro devuelto</label>
+      </div></div>`; }).join("")}
+  ${(P.sinIdentificar||[]).length ? `<div class="warn">Claude no pudo identificar: ${P.sinIdentificar.map(x=>`${esc(x.ref)} (${esc(x.describe||"")})`).join(" · ")}. Asígnelas a mano en la bandeja.</div>` : ""}
+  <div class="row" style="gap:8px;margin-top:8px"><label>Fecha de entrega<input type="date" value="${P.fecha||hoy()}" onchange="S.propuesta.fecha=this.value;guardarLocal()"></label>
+    <button class="btn" onclick="aplicarPropuesta()">Aplicar propuesta</button><button class="btn sec danger" onclick="if(confirm('¿Descartar la propuesta? Las fotos siguen en la bandeja.')){S.propuesta=null;guardarLocal();render();}">Descartar</button></div>
+  <p class="muted" style="font-size:.84rem">La fecha solo se registra en quien no la tenga. Las fotos vinculadas salen de la bandeja y pasan a las evidencias de cada reporte.</p></section>`;
+}
+async function aplicarPropuesta(){
+  const P = S.propuesta; if(!P) return; const ronda = rondaPorId(P.ronda) || rondaSel();
+  const falta = P.registros.flatMap(r=>(r.fotos||[]).filter(f=>!r.vinculo?.[f.ref]).map(f=>`${r.alumnoId}: ${f.ref}`));
+  if(falta.length && !confirm(`Faltan por vincular:\n${falta.join("\n")}\n\nLas zonas de esas fotos quedarán sin recuadro. ¿Aplicar de todos modos?`)) return;
+  const regs = []; const movidas = new Set(); S.fotosMeta = S.fotosMeta || {};
+  for(const r of P.registros){
+    if(!alumnoPorId(r.alumnoId)) continue;
+    const n = {alumnoId:r.alumnoId, ronda:ronda.id};
+    CAMPOS_PROPUESTA.forEach(k=>{ if(r[k]!==undefined) n[k] = structuredClone(r[k]); });
+    const ids = (r.fotos||[]).map(f=>r.vinculo?.[f.ref]).filter(Boolean);
+    if(ids.length) n.evidencias = [...new Set(ids)];
+    Object.values(n.anclas||{}).forEach(z=>{ if(!z) return; const id = r.vinculo?.[z.foto]; if(id) z.foto = id; else if(z.foto){ z.foto = ""; z.x = z.y = z.w = z.h = null; } });
+    const prev = registroDe(r.alumnoId, ronda.id);
+    if(r.entregaReporte && P.fecha && !prev?.fechaRecepcion) n.fechaRecepcion = P.fecha;
+    if(r.libroDevuelto && P.fecha && !prev?.libroDevuelto) n.libroDevuelto = P.fecha;
+    ids.forEach(id=>movidas.add(id));
+    regs.push(n);
+  }
+  for(const id of movidas){
+    const b = (S.bandeja||[]).find(x=>x.id===id); if(b) S.fotosMeta[id] = {nombre:b.nombre, w:b.w, h:b.h};
+    const f = await fotoGet(id).catch(()=>null); if(f) await fotoPut({...f, pendiente:true});
+  }
+  S.bandeja = (S.bandeja||[]).filter(x=>!movidas.has(x.id)); S.propuesta = null;
+  rondaActiva = ronda.id;
+  await importarEvidencias({tipo:"evidencias_reporte_lectura", fotos:[], registros:regs});
+}
+/* Contexto compacto de la ronda para el proyecto de Claude: quién tiene qué libro y qué apartados se revisan. */
+function exportarContexto(){
+  const ronda = rondaSel();
+  const filas = S.roster.slice().sort((a,b)=>GRUPOS.indexOf(a.grupo)-GRUPOS.indexOf(b.grupo)||a.nl-b.nl).map(a=>{
+    const f = folioDe(a.id, ronda.id); const L = LIBROS[f]||{}; const g = perfilDe(a.id)?.guia;
+    const guia = g && g.ronda===ronda.id && g.apartados?.length;
+    const lista = seccionesDe(a.id, ronda.id).map((s,i)=>`s${i} ${s.titulo}`).join(" | ");
+    return [a.id, a.grupo, a.nl, a.nombre, f, L.t||"", L.a||"", rondaSinReporte(a.id, ronda.id) ? "sigue con el libro anterior" : "", guia ? lista : `formato de ${gradoDe(a.grupo)}.°`]; });
+  /* Los apartados del formato de grado se escriben una sola vez al final, para que el archivo pese poco. */
+  const tabla = (ronda.id==="R1" ? SECCIONES_R1 : SECCIONES);
+  const formatos = Object.entries(tabla).map(([g,t])=>[`formato de ${g}.°`, t.map((x,i)=>`s${i} ${x}`).join(" | ")]);
+  descargar(`contexto_${ronda.id}_${hoy()}.csv`, csv([["alumnoId","grupo","nl","nombre","codigo","titulo","autor","nota","apartados"], ...filas, [], ["formato","apartados"], ...formatos]), "text/csv;charset=utf-8");
+}
+function verFotoBandeja(id){ urlFoto(id).then(u=>{ if(u) window.open(u, "_blank"); }); }
+function prepararSoltar(){
+  if(soltarListo) return; soltarListo = true;
+  const zona = () => vista==="fotos" ? document.getElementById("soltar") : null;
+  document.addEventListener("dragover", e=>{ if(!zona()) return; e.preventDefault(); zona().classList.add("activa"); });
+  document.addEventListener("dragleave", e=>{ if(zona() && !e.relatedTarget) zona().classList.remove("activa"); });
+  document.addEventListener("drop", e=>{ if(!zona()) return; e.preventDefault(); zona().classList.remove("activa"); recibirFotos(e.dataTransfer.files); });
+  document.addEventListener("paste", e=>{ if(!zona()) return; const fs = [...(e.clipboardData?.files||[])]; if(fs.length){ e.preventDefault(); recibirFotos(fs); } });
+}
+function vistaFotos(){
+  if(necesitaDesbloqueo()) return sinLista();
+  prepararSoltar();
+  const ronda = rondaSel(); const band = S.bandeja || [];
+  const opcAlumnos = (g, sel) => `<option value="">Alumno…</option>${S.roster.filter(a=>a.grupo===g).sort((x,y)=>x.nl-y.nl).map(a=>{
+    const f = folioDe(a.id, ronda.id); return `<option value="${a.id}" ${a.id===sel?"selected":""}>${a.nl}. ${esc(a.nombre)}${f?` · ${esc(f)}`:""}</option>`; }).join("")}`;
+  return `<section class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Recibir fotografías</h2>${selectorRonda()}</div>
+  <p class="muted">Tome las fotos con el celular o elíjalas de la galería o de una carpeta de la computadora. Llegan a la bandeja de abajo; ahí elija de quién es cada foto y si es una página del reporte, la portada del libro devuelto o las dos cosas.</p>
+  <div class="row" style="gap:8px">
+    <label class="btnfoto">📷 Tomar foto<input type="file" accept="image/*" capture="environment" class="hidden" onchange="recibirFotos(this.files);this.value=''"></label>
+    <label class="btnfoto">🖼️ Elegir fotos<input type="file" accept="image/*" multiple class="hidden" onchange="recibirFotos(this.files);this.value=''"></label>
+  </div>
+  <div id="soltar" class="soltar muted">En la computadora también puede <b>arrastrar fotos aquí</b> o pegarlas con <b>Ctrl + V</b>.</div>
+  <p class="muted" style="font-size:.84rem">Las fotos se reducen y se guardan en este equipo. Con el guardado en GitHub activo, cada foto se sube cifrada cuando se asigna a un alumno; las que siguen en la bandeja no salen de este equipo.</p>
+  <div class="row" style="gap:8px"><button class="btn small sec" onclick="exportarContexto()">Descargar contexto de la ronda para Claude (CSV)</button>
+  <label class="btn small sec" style="flex-direction:row;cursor:pointer">Importar propuesta de Claude (.json)<input type="file" accept=".json" class="hidden" onchange="importarJSON(this.files[0]);this.value=''"></label></div></section>
+  ${tarjetaPropuesta()}
+  <section class="card"><h2>Bandeja · ${band.length} foto(s) sin asignar</h2>${band.length ? `<div class="bandeja">${band.map((b,k)=>{
+    const a = b.alumnoId ? alumnoPorId(b.alumnoId) : null; const f = a ? folioDe(a.id, ronda.id) : "";
+    return `<figure><img data-foto="${esc(b.id)}" alt="${esc(b.nombre)}" onclick="verFotoBandeja('${b.id}')">
+      <small class="muted"><b>B${k+1}</b> · ${esc(b.nombre)} · llegó el ${fmtFecha(b.llegada)}</small>
+      <label>Grupo<select onchange="editarBandeja('${b.id}','grupo',this.value)">${GRUPOS.map(g=>`<option ${g===b.grupo?"selected":""}>${g}</option>`).join("")}</select></label>
+      <label>Alumno<select onchange="editarBandeja('${b.id}','alumnoId',this.value)">${opcAlumnos(b.grupo, b.alumnoId)}</select></label>
+      ${a ? `<div class="libro">${portada(f)}<span>${esc(LIBROS[f]?.t||"Sin libro de ruta")}<small>Libro de su ruta en ${esc(ronda.nombre)} · ${esc(f)}</small></span></div>` : ""}
+      <label>¿Qué muestra?<select onchange="editarBandeja('${b.id}','tipo',this.value)">${Object.entries(TIPOS_FOTO).map(([k,v])=>`<option value="${k}" ${k===b.tipo?"selected":""}>${v}</option>`).join("")}</select></label>
+      <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" ${b.marcarFecha?"checked":""} onchange="editarBandeja('${b.id}','marcarFecha',this.checked)"> Registrar ${b.tipo==="libro"?"la devolución del libro":b.tipo==="ambos"?"reporte y libro":"el reporte"} con fecha</label>
+      <input type="date" value="${b.fecha||""}" aria-label="Fecha de entrega" onchange="editarBandeja('${b.id}','fecha',this.value)">
+      <div class="row" style="gap:6px"><button class="btn small" onclick="asignarFoto('${b.id}')">Asignar</button><button class="btn small danger" onclick="descartarFoto('${b.id}')">Descartar</button></div>
+    </figure>`; }).join("")}</div>
+    <p class="muted" style="font-size:.84rem">La fecha solo se registra si el alumno todavía no la tiene; una fecha ya capturada no se cambia aquí. Después, en «Revisar reporte», se valoran los apartados y se marcan las zonas de cada foto.</p>`
+    : `<p class="muted">No hay fotos pendientes de asignar.</p>`}</section>`;
 }
 
 /* ---------- visor ---------- */
@@ -2050,7 +2227,7 @@ const tarjetaInforme = () => `<section class="card"><h2>Informe completo de todo
 /* ============================================================
    NAVEGACIÓN
    ============================================================ */
-const VISTAS = {panel:vistaPanel, grupos:vistaGrupos, registrar:vistaRegistrar, criterios:vistaCriterios, datos:vistaDatos, config:vistaConfig};
+const VISTAS = {panel:vistaPanel, grupos:vistaGrupos, fotos:vistaFotos, registrar:vistaRegistrar, criterios:vistaCriterios, datos:vistaDatos, config:vistaConfig};
 function ir(v){ vista=v; render(); window.scrollTo(0,0); }
 function render(){
   const y = window.scrollY;
